@@ -68,3 +68,32 @@ module.exports = {
 - Use `npx sequelize-cli` for additional Sequelize commands like creating models or seeds.
 
 For further assistance, refer to the [Sequelize documentation](https://sequelize.org/).
+
+## Create Migrations
+
+1. Install migration dependencies:
+    ```bash
+    npm install sequelize sequelize-cli pg pg-hstore
+    ```
+
+2. Initialize configuration (if the `config` folder does not exist):
+    ```bash
+    npx sequelize-cli init
+    ```
+
+3. Create a new migration:
+    ```bash
+    npx sequelize-cli migration:generate --name create-users-table
+    ```
+
+4. Add tables/relationships to the `migrations` folder as needed.
+
+5. Execute the migration:
+    ```bash
+    npx sequelize-cli db:migrate
+    ```
+
+6. If inconsistencies or errors occur, you can undo all migrations with the following command:
+    ```bash
+    npx sequelize-cli db:migrate:undo:all
+    ```
