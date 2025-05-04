@@ -6,8 +6,8 @@ function NavBar() {
   
     const navConfig = {
       '/': { to: '/login', text: 'Login' },
-      '/Secretary': { to: '/login', text: 'Cerrar Sesion' },
-      '/Teacher': { to: '/login', text: 'Cerrar Sesion' },
+      '/secretary': { to: '/login', text: 'Cerrar Sesion' },
+      '/teacher': { to: '/login', text: 'Cerrar Sesion' },
     };
   
   

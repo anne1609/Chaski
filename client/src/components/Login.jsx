@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const users = {
-  Secretary: { email: 'secretaria@gmail.com', password: 'secretaria', role: 'secretaria' },
-  Teacher: { email: 'profesor@gmail.com', password: 'profesor', role: 'profesor' },
+  Secretary: { email: 'secretaria@gmail.com', password: 'secretaria', role: 'secretary' },
+  Teacher: { email: 'profesor@gmail.com', password: 'profesor', role: 'teacher' },
 };
 
 function Login() {
