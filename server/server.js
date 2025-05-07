@@ -3,6 +3,10 @@ const cors = require("cors");
 const morgan = require("morgan");
 const path = require("path");
 const emailRoutes = require("./routes/emailRoutes.js");
+const gradeRoutes = require("./routes/gradeRoutes.js");
+const tutorRoutes = require("./routes/tutorRoutes.js");
+const teacherRoutes = require("./routes/teacherRoutes.js");
+const subjectRoutes = require("./routes/subjectRoutes.js");
 
 const app = express();
 app.use(morgan("dev"));
@@ -14,6 +18,10 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use("/api", emailRoutes);
+app.use("/api", gradeRoutes);
+app.use("/api", tutorRoutes);
+app.use("/api", teacherRoutes);
+app.use("/api", subjectRoutes);
 
   
   app.listen(8080, () => {
