@@ -7,6 +7,9 @@ const gradeRoutes = require("./routes/gradeRoutes.js");
 const tutorRoutes = require("./routes/tutorRoutes.js");
 const teacherRoutes = require("./routes/teacherRoutes.js");
 const subjectRoutes = require("./routes/subjectRoutes.js");
+const communicationRoutes = require("./routes/communicationRoutes.js");
+const categoryRoutes = require("./routes/categoryRoutes.js");
+const userRoutes = require("./routes/userRoutes.js");
 
 const app = express();
 app.use(morgan("dev"));
@@ -22,6 +25,9 @@ app.use("/api", gradeRoutes);
 app.use("/api", tutorRoutes);
 app.use("/api", teacherRoutes);
 app.use("/api", subjectRoutes);
+app.use("/api", communicationRoutes);
+app.use("/api", categoryRoutes);
+app.use("/api", userRoutes);
 
   
   app.listen(8080, () => {

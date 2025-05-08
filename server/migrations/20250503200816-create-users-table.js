@@ -28,7 +28,7 @@ module.exports = {
         allowNull: false
       },
       role: {
-        type: Sequelize.ENUM('admin', 'tutor', 'student'),
+        type: Sequelize.ENUM('secretary', 'teacher'),
         allowNull: false
       },
       phone_number: {
