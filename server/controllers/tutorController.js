@@ -111,4 +111,4 @@ const getEmailTutorsByGrade = async (req, res) => {
   }
 };
 
-module.exports = { createTutor, getEmailTutors, getTutorById, getEmailTutorsByGrade };
+module.exports = { createTutor, getEmailTutorsByGrade };
