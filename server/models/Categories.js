@@ -1,7 +1,17 @@
 'use strict';
 
-module.exports = (sequelize, DataTypes) => {
-    const Categories = sequelize.define('categories', {
+
+    const { Model } = require('sequelize');
+    
+    module.exports = (sequelize, DataTypes) => {
+      class Categories extends Model {
+        static associate(models) {
+          // Define las asociaciones aquí
+      
+        }
+      }
+    
+      Categories.init({
         id: {
             type: DataTypes.INTEGER,
             primaryKey: true,
@@ -15,9 +25,12 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: true,
         },
-    }, {
+      }, {
+        sequelize,
+        modelName: 'Categories',
         tableName: 'categories',
-        timestamps: false,
-    });
-    return Category;
-}
+        timestamps: false
+      });
+    
+      return Categories;
+    };

@@ -1,38 +1,39 @@
 'use strict';
 
+const { Model } = require('sequelize');
+
 module.exports = (sequelize, DataTypes) => {
-    Grades_Communications = sequelize.define('grades_communications', {
-        grade_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            primaryKey: true,
-            references: {
-                model: 'grades',
-                key: 'id',
-            },
-        },
-        communication_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            primaryKey: true,
-            references: {
-                model: 'communications',
-                key: 'id',
-            },
-        },
-    }, {
-        tableName: 'grades_communications',
-        timestamps: false,
-    });
-    Grades_Communications.associate = (models) => {
-        Grades_Communications.belongsTo(models.grades, {
-            foreignKey: 'grade_id',
-            as: 'grade',
-        });
-        Grades_Communications.belongsTo(models.communications, {
-            foreignKey: 'communication_id',
-            as: 'communication',
-        });
-    };
-    return Grades_Communications;
-}
+  class Grades_Communications extends Model {
+    static associate(models) {
+      // Las asociaciones se definen en los modelos principales (Grades y Communications)
+    }
+  }
+  
+  Grades_Communications.init({
+    grade_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      primaryKey: true,
+      references: {
+        model: 'grades',
+        key: 'id',
+      },
+    },
+    communication_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      primaryKey: true,
+      references: {
+        model: 'communications',
+        key: 'id',
+      },
+    }
+  }, {
+    sequelize,
+    modelName: 'Grades_Communications',
+    tableName: 'grades_communications',
+    timestamps: false,
+  });
+  
+  return Grades_Communications;
+};

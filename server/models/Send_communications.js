@@ -1,7 +1,16 @@
 'use strict';
+const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-    Send_Communications = sequelize.define('send_communications', {
+    class Send_Communications extends Model {
+        static associate(models) {
+          // Las asociaciones se definen en los modelos principales (Grades y Communications)
+        }
+      }
+
+
+
+      Send_Communications.init({
         id: {
             type: DataTypes.INTEGER,
             primaryKey: true,
@@ -26,14 +35,11 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: false,
         },
     }, {
+        sequelize,
+        modelName: 'Send_Communications',
         tableName: 'send_communications',
         timestamps: false,
-    });
-    Send_Communications.associate = (models) => {
-        Send_Communications.belongsTo(models.communications, {
-            foreignKey: 'communication_id',
-            as: 'communication',
-        });
+      });
+      
+      return Send_Communications;
     };
-    return Send_Communications;
-}

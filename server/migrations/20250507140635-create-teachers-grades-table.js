@@ -3,26 +3,31 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up (queryInterface, Sequelize) {
-    await queryInterface.createTable('grades', {
-      id: {
+    await queryInterface.createTable('teachers_grades', {
+      teacher_id: {
         type: Sequelize.INTEGER,
-        autoIncrement: true,
-        primaryKey: true
+        allowNull: false,
+        primaryKey: true,
+        references: {
+          model: 'teachers',
+          key: 'id'
+        }
       },
-      name: {
-        type: Sequelize.STRING,
-        allowNull: false
+      grade_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        primaryKey: true,
+        references: {
+          model: 'grades',
+          key: 'id'
+        }
       },
-      description: {
-        type: Sequelize.TEXT,
-        allowNull: true
-      },
-      createdAt: {
+      created_at: {
         type: Sequelize.DATE,
         allowNull: false,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
-      updatedAt: {
+      updated_at: {
         type: Sequelize.DATE,
         allowNull: false,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
@@ -31,6 +36,6 @@ module.exports = {
   },
 
   async down (queryInterface, Sequelize) {
-    await queryInterface.dropTable('grades');
+    await queryInterface.dropTable('teachers_grades');
   }
 };
