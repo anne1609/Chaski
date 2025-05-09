@@ -22,7 +22,7 @@ const getEmailStudents = async (req, res) => {
   const { gradeId } = req.params;
 
   try {
-    // First, find the grade to get its name
+    
     const grade = await Grades.findOne({
       where: { id: gradeId },
       attributes: ["id", "name"], 
@@ -32,8 +32,7 @@ const getEmailStudents = async (req, res) => {
       return res.status(404).json({ message: "Grado no encontrado" });
     }
 
-    // Grade is found, so we have grade.name
-    // Now, find students for this grade
+    
     const students = await Students.findAll({
       where: { grade_id: gradeId },
       attributes: ["names", "last_names", "email"]
@@ -44,7 +43,7 @@ const getEmailStudents = async (req, res) => {
       email: student.email
     }));
 
-    // Always return gradeName if the grade was found, along with the emails list (which might be empty)
+    
     res.status(200).json({ gradeName: grade.name, emails });
 
   } catch (error) {

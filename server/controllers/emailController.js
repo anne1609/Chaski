@@ -5,10 +5,10 @@ const sendEmail = async (req, res) => {
 
   try {
     await transporter.sendMail({
-      from: `"Chaski App" <${process.env.EMAIL_USER}>`, // Remitente
-      to, // Destinatario
-      subject, // Asunto
-      text: message, // Mensaje en texto plano
+      from: `"Chaski App" <${process.env.EMAIL_USER}>`, 
+      to, 
+      subject, 
+      text: message, 
     });
 
     res.status(200).json({ message: "Correo enviado exitosamente" });

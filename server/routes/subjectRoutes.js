@@ -4,7 +4,6 @@ const { getSubjects,getSubjectTeachersEmails } = require("../controllers/subject
 const router = express.Router();
 
 router.get("/subjects", getSubjects);    
-// Ruta para obtener todos los correos de profesores de una materia específica
 router.get("/subject/:subjectId/teachers/emails", getSubjectTeachersEmails);
 
 

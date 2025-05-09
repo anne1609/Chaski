@@ -10,7 +10,7 @@ const getEmailsTeacher = async (req, res) => {
 
     const teachersWithGrades = [];
 
-    // Para cada profesor, obtener sus grados asignados
+   
     for (const teacher of teachers) {
       const teacherGradeRelations = await TeacherGrades.findAll({
         where: { teacher_id: teacher.id }
