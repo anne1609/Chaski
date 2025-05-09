@@ -1,5 +1,21 @@
 const { Subjects, Teachers, Grades, SubjectsTeachers } = require("../models");
 
+const getSubjects = async (req, res) => {
+  try {
+    const subjects = await Subjects.findAll({
+      attributes: ["id", "name"],
+    });
+
+    if (subjects.length === 0) {
+      return res.status(200).json({ message: "No se encontraron materias" });
+    }
+
+    res.status(200).json(subjects);
+  } catch (error) {
+    console.error("Error al obtener las materias:", error);
+    res.status(500).json({ error: "Error al obtener las materias" });
+  }
+}
 
 const getSubjectTeachersEmails = async (req, res) => {
   const { subjectId } = req.params;
@@ -9,7 +25,7 @@ const getSubjectTeachersEmails = async (req, res) => {
     const subject = await Subjects.findByPk(subjectId);
     
     if (!subject) {
-      return res.status(404).json({ message: "Materia no encontrada" });
+      return res.status(200).json({ message: "Materia no encontrada" });
     }
 
     // Obtener todos los profesores relacionados con esta materia a través de la tabla pivote
@@ -18,7 +34,7 @@ const getSubjectTeachersEmails = async (req, res) => {
     });
     
     if (teacherRelations.length === 0) {
-      return res.status(404).json({ 
+      return res.status(200).json({ 
         subject: { id: subject.id, name: subject.name },
         message: "No hay profesores asignados a esta materia" 
       });
@@ -42,6 +58,7 @@ const getSubjectTeachersEmails = async (req, res) => {
     // Enviar respuesta con información de la materia y los correos de los profesores
     res.status(200).json({
       subject: {
+        id: subject.id,
         name: subject.name,
         description: subject.description
       },
@@ -54,5 +71,6 @@ const getSubjectTeachersEmails = async (req, res) => {
 };
 
 module.exports = { 
-  getSubjectTeachersEmails 
+  getSubjectTeachersEmails,
+  getSubjects
 };

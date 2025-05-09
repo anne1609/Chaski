@@ -24,6 +24,9 @@ function NavBar() {
           <div className="collapse navbar-collapse" id="navbarNavAltMarkup">
             <div className="navbar-nav me-auto"> 
               <Link className="nav-link active" aria-current="page" to="/">Home</Link>
+              {pathname === '/secretary' && (
+                <Link className="nav-link active" to="/secretary/mails">Enviar Correos</Link>
+              )}
               <a className="nav-link" href="#">Features</a>
               <a className="nav-link" href="#">Pricing</a>
               <a className="nav-link disabled" href="#" tabIndex="-1" aria-disabled="true">Disabled</a>

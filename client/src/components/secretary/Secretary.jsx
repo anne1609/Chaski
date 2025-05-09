@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import EmailForm from '../shared/emailForm';
+import EmailForm from '../shared/EmailForm';
 import { Button, Box } from '@mui/material';
 
 function Secretary() {
