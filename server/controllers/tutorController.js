@@ -17,6 +17,50 @@ const createTutor = async (req, res) => {
   }
 };
 
+const getEmailTutors = async (req, res) => {
+  try {
+    const tutors = await Tutors.findAll({
+      attributes: ['id', 'names', 'last_names', 'email', 'phone_number']
+    });
+
+    if (!tutors || tutors.length === 0) {
+      return res.status(404).json({ message: "No se encontraron tutores" });
+    }
+
+    const tutorsWithStudents = await Promise.all(tutors.map(async (tutor) => {
+      const tutorStudentRelations = await Tutors_Students.findAll({
+        where: { tutor_id: tutor.id },
+        attributes: ['student_id']
+      });
+
+      const studentIds = tutorStudentRelations.map(relation => relation.student_id);
+      const studentsData = await Students.findAll({
+        where: { id: studentIds },
+        attributes: ['id', 'names', 'last_names', 'email']
+      });
+
+      const students = studentsData.map(student => ({
+        id: student.id,
+        name: `${student.names} ${student.last_names}`,
+        email: student.email
+      }));
+
+      return {
+        id: tutor.id,
+        name: `${tutor.names} ${tutor.last_names}`,
+        email: tutor.email,
+        phone_number: tutor.phone_number,
+        students
+      };
+    }));
+
+    res.status(200).json({ tutors: tutorsWithStudents });
+  }
+  catch (error) {
+    console.error("Error al obtener los correos de los tutores:", error);
+    res.status(500).json({ error: "Error al obtener los correos de los tutores" });
+  }
+}
 
 const getEmailTutorsByGrade = async (req, res) => {
   const { gradeId } = req.params;
@@ -111,4 +155,4 @@ const getEmailTutorsByGrade = async (req, res) => {
   }
 };
 
-module.exports = { createTutor, getEmailTutors, getTutorById, getEmailTutorsByGrade };
+module.exports = { createTutor, getEmailTutors, getEmailTutorsByGrade};
