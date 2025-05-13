@@ -18,11 +18,19 @@ module.exports = {
           key: 'id'
         }
       },
-      user_id: {
+      secretary_id: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: {
-          model: 'users',
+          model: 'secretaries',
+          key: 'id'
+        }
+      },
+      teacher_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'teachers',
           key: 'id'
         }
       },

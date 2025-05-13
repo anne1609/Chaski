@@ -60,7 +60,7 @@ function EmailForm({ role }) {
         required
       />
       <Button type="submit" variant="contained" color="primary">
-        {role === 'secretary' ? 'Enviar a todo el colegio' : 'Enviar a mi curso'}
+        {role === 'secretary' ? 'Siguiente' : 'Siguiente'}
       </Button>
     </Box>
   );
