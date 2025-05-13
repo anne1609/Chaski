@@ -1,33 +1,13 @@
 'use strict';
 
-const { Model } = require('sequelize');
-
 module.exports = (sequelize, DataTypes) => {
-  class Users_Communications extends Model {
-    static associate(models) {
-      if (models.Users) {
-        Users_Communications.belongsTo(models.Users, {
-          foreignKey: 'user_id',
-          as: 'user',
-        });
-      }
-      
-      if (models.Communications) {
-        Users_Communications.belongsTo(models.Communications, {
-          foreignKey: 'communication_id',
-          as: 'communication',
-        });
-      }
-    }
-  }
-  
-  Users_Communications.init({
-    user_id: {
+  const Secretaries_communications = sequelize.define('secretaries_communications', {
+    secretary_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       primaryKey: true,
       references: {
-        model: 'users',
+        model: 'secretaries',
         key: 'id',
       },
     },
@@ -56,10 +36,19 @@ module.exports = (sequelize, DataTypes) => {
     },
   }, {
     sequelize,
-    modelName: 'Users_Communications',
-    tableName: 'users_communications',
+    modelName: 'Secretary_communications',
+    tableName: 'secretaries_communications',
     timestamps: false,
   });
-  
-  return Users_Communications;
+  Secretaries_communications.associate = (models) => {
+    Secretaries_communications.belongsTo(models.Secretaries, {
+      foreignKey: 'secretary_id',
+      as: 'secretaries',
+    });
+    Secretaries_communications.belongsTo(models.Communications, {
+      foreignKey: 'communication_id',
+      as: 'communications',
+    });
+  }
+  return Secretaries_communications;
 };
