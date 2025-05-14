@@ -27,6 +27,11 @@ function CommunicationsStatus({ role }) {
 
   const handleStatusChange = async (id, newStatus) => {
     try {
+      if (newStatus === 'Archivado') {
+        const confirm = window.confirm('¿Estás seguro de que deseas archivar este mensaje?');
+        if (!confirm) return;
+      }
+
       const communicationToUpdate = communications.find((communication) => communication.id === id);
       if (!communicationToUpdate) {
         alert('Comunicación no encontrada.');
@@ -61,7 +66,6 @@ function CommunicationsStatus({ role }) {
       alert(`Error: ${error.message}`);
     }
   };
-
   if (loading) return <div>Cargando...</div>;
   if (error) return <div>Error: {error}</div>;
 
@@ -78,26 +82,26 @@ function CommunicationsStatus({ role }) {
                 <TableCell>prioridad</TableCell>
                 <TableCell>Categoria</TableCell>
                 <TableCell>Mensaje</TableCell>
-                <TableCell>Estado</TableCell>
                 <TableCell>Acciones</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {communications.map((communication) => (
+              {communications
+              .filter((communication) => communication.status === 'Guardado')
+              .map((communication) => (
                 <TableRow key={communication.id}>
                   <TableCell>{communication.subject}</TableCell>
                   <TableCell>{communication.priority}</TableCell>
                   <TableCell>{communication.category.name}</TableCell>
                   <TableCell>{communication.body}</TableCell>
-                  <TableCell>{communication.status}</TableCell>
                   <TableCell>
                     <Button
                       variant="contained"
                       color="primary"
-                      onClick={() => handleStatusChange(communication.id, 'Enviado')}
+                      onClick={() => handleStatusChange(communication.id, 'Guardado')}
                       sx={{ mr: 1 }}
                     >
-                      Enviar
+                      Seguir Editando
                     </Button>
                     <Button
                       variant="contained"

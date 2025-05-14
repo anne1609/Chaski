@@ -14,7 +14,7 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
-      lastNames: {
+      last_names: {
         type: Sequelize.STRING,
         allowNull: false
       },
@@ -25,10 +25,6 @@ module.exports = {
       },
       password: {
         type: Sequelize.STRING,
-        allowNull: false
-      },
-      role: {
-        type: Sequelize.ENUM('secretary', 'teacher'),
         allowNull: false
       },
       phone_number: {

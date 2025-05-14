@@ -1,18 +1,35 @@
-const {Communications, Categories, Users} = require('../models');
+const {Communications, Categories, Secretaries, Teachers} = require('../models');
 
 module.exports = {
-    async getCommunications(req, res) {
+    async getAllCommunications(req, res) {
         try {
-            const communicationsList = await Communications.findAll({
+            const communications = await Communications.findAll({
                 include: [
-                    { model: Categories, as: 'category' },
-                    { model: Users, as: 'user' }
-                ]
+                    {
+                        model: Secretaries,
+                        as: 'secretaries',
+                        attributes: ['id', 'names', 'last_names'],
+                    },
+                    {
+                        model: Teachers,
+                        as: 'teachers',
+                        attributes: ['id', 'names', 'last_names'],
+                    },
+                    {
+                        model: Categories,
+                        as: 'category',
+                        attributes: ['id', 'name'],
+                    },
+                    
+                ],
             });
-            res.status(200).json(communicationsList);
+            if (communications.length === 0) {
+                return res.status(404).json({ message: 'No communications found' });
+            }
+            res.status(200).json(communications);
         } catch (error) {
             console.error('Error fetching communications:', error);
-            res.status(500).json({ message: 'Error fetching communications' });
+            res.status(500).json({ error: 'Internal server error' });
         }
     },
     async getCommunicationById(req, res) {
@@ -20,9 +37,23 @@ module.exports = {
         try {
             const communication = await Communications.findByPk(id, {
                 include: [
-                    { model: Categories, as: 'category' },
-                    { model: Users, as: 'user' }
-                ]
+                    {
+                        model: Secretaries,
+                        as: 'secretaries',
+                        attributes: ['id', 'names', 'last_names'],
+                    },
+                    {
+                        model: Teachers,
+                        as: 'teachers',
+                        attributes: ['id', 'names', 'last_names'],
+                    },
+                    {
+                        model: Categories,
+                        as: 'category',
+                        attributes: ['id', 'name'],
+                    },
+                    
+                ],
             });
             if (!communication) {
                 return res.status(404).json({ message: 'Communication not found' });
@@ -30,29 +61,30 @@ module.exports = {
             res.status(200).json(communication);
         } catch (error) {
             console.error('Error fetching communication:', error);
-            res.status(500).json({ message: 'Error fetching communication' });
+            res.status(500).json({ error: 'Internal server error' });
         }
     },
     async createCommunication(req, res) {
-        const { category_id, user_id, subject, body, status, priority } = req.body;
+        const { category_id, secretary_id, teacher_id, subject, body, status, priority } = req.body;
         try {
             const newCommunication = await Communications.create({
                 category_id,
-                user_id,
+                secretary_id,
+                teacher_id,
                 subject,
                 body,
                 status,
-                priority
+                priority,
             });
             res.status(201).json(newCommunication);
         } catch (error) {
             console.error('Error creating communication:', error);
-            res.status(500).json({ message: 'Error creating communication' });
+            res.status(500).json({ error: 'Internal server error' });
         }
     },
     async updateCommunication(req, res) {
         const { id } = req.params;
-        const { category_id, user_id, subject, body, status, priority } = req.body;
+        const { category_id, secretary_id, teacher_id, subject, body, status, priority } = req.body;
         try {
             const communication = await Communications.findByPk(id);
             if (!communication) {
@@ -60,16 +92,17 @@ module.exports = {
             }
             await communication.update({
                 category_id,
-                user_id,
+                secretary_id,
+                teacher_id,
                 subject,
                 body,
                 status,
-                priority
+                priority,
             });
             res.status(200).json(communication);
         } catch (error) {
             console.error('Error updating communication:', error);
-            res.status(500).json({ message: 'Error updating communication' });
+            res.status(500).json({ error: 'Internal server error' });
         }
     },
     async deleteCommunication(req, res) {
@@ -83,7 +116,7 @@ module.exports = {
             res.status(204).send();
         } catch (error) {
             console.error('Error deleting communication:', error);
-            res.status(500).json({ message: 'Error deleting communication' });
+            res.status(500).json({ error: 'Internal server error' });
         }
-    }
+    },
 }
