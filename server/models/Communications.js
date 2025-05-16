@@ -13,10 +13,17 @@ module.exports = (sequelize, DataTypes) => {
         });
       }
       
-      if (models.Users) {
-        Communications.belongsTo(models.Users, {
-          foreignKey: 'user_id',
-          as: 'user',
+      if (models.Secretaries) {
+        Communications.belongsTo(models.Secretaries, {
+          foreignKey: 'secretary_id',
+          as: 'secretaries',
+        });
+      }
+
+      if (models.Teachers) {
+        Communications.belongsTo(models.Teachers, {
+          foreignKey: 'teacher_id',
+          as: 'teachers',
         });
       }
       
@@ -46,11 +53,11 @@ module.exports = (sequelize, DataTypes) => {
         });
       }
       
-      if (models.Users) {
-        Communications.belongsToMany(models.Users, {
-          through: 'users_communications',
+      if (models.Secretaries) {
+        Communications.belongsToMany(models.Secretaries, {
+          through: 'secretaries_communications',
           foreignKey: 'communication_id',
-          otherKey: 'user_id',
+          otherKey: 'secretary_id',
         });
       }
     }
@@ -70,11 +77,19 @@ module.exports = (sequelize, DataTypes) => {
         key: 'id',
       },
     },
-    user_id: {
+    secretary_id: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       references: {
-        model: 'users',
+        model: 'secretaries',
+        key: 'id',
+      },
+    },
+    teacher_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'teachers',
         key: 'id',
       },
     },
