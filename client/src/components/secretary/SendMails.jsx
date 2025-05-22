@@ -16,12 +16,10 @@ function SendMails() {
     switch (selectedOption) {
       case 'profesores':
         return <TeachersMails />;
-      case 'cursos':
+      case 'estudiantes':
         return <GradeMails />;
-      case 'tutores':
+      case 'cursos':
         return <TutorsMails />;
-      case 'materias':
-        return <SubjectMails />;
       default:
         return <Typography>Seleccione una opción</Typography>;
     }
@@ -38,10 +36,9 @@ function SendMails() {
           value={selectedOption}
           onChange={handleOptionChange}
         >
-          <FormControlLabel value="profesores" control={<Radio />} label="Profesores" />
+          <FormControlLabel value="estudiantes" control={<Radio />} label="Estudiantes" />
           <FormControlLabel value="cursos" control={<Radio />} label="Cursos" />
-          <FormControlLabel value="tutores" control={<Radio />} label="Tutores" />
-          <FormControlLabel value="materias" control={<Radio />} label="Materias" />
+          <FormControlLabel value="profesores" control={<Radio />} label="Profesores" />
         </RadioGroup>
       </FormControl>
 
