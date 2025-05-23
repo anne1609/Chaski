@@ -36,13 +36,18 @@ const getEmailTutors = async (req, res) => {
       const studentIds = tutorStudentRelations.map(relation => relation.student_id);
       const studentsData = await Students.findAll({
         where: { id: studentIds },
+        include: [{
+          model: Grades,
+          attributes: ['name']
+        }],
         attributes: ['id', 'names', 'last_names', 'email']
       });
 
       const students = studentsData.map(student => ({
         id: student.id,
         name: `${student.names} ${student.last_names}`,
-        email: student.email
+        email: student.email,
+        gradeName: student.Grade ? student.Grade.name : 'Grado no asignado' // Include grade name
       }));
 
       return {
@@ -66,7 +71,10 @@ const getEmailTutorsByGrade = async (req, res) => {
   const { gradeId } = req.params;
 
   try {
-   
+    if (!gradeId) { // If no gradeId is provided, call getEmailTutors
+      return getEmailTutors(req, res);
+    }
+
     const grade = await Grades.findByPk(gradeId, { attributes: ['id', 'name'] });
 
     if (!grade) {
@@ -74,13 +82,13 @@ const getEmailTutorsByGrade = async (req, res) => {
     }
     const actualGradeName = grade.name;
 
-    
+
     const studentsInGrade = await Students.findAll({
       where: { grade_id: gradeId },
-      attributes: ['id', 'names', 'last_names', 'email']
+      attributes: ['id', 'names', 'last_names', 'email'] // grade_id is implicitly here
     });
 
-    
+
     if (!studentsInGrade || studentsInGrade.length === 0) {
       return res.status(200).json({
         id: gradeId,
@@ -91,15 +99,16 @@ const getEmailTutorsByGrade = async (req, res) => {
     }
 
     const studentIdsInGrade = studentsInGrade.map(student => student.id);
-    const studentsInGradeMap = new Map(studentsInGrade.map(s => [s.id, { name: `${s.names} ${s.last_names}`, email: s.email }]));
+    // Store gradeName along with other student details
+    const studentsInGradeMap = new Map(studentsInGrade.map(s => [s.id, { name: `${s.names} ${s.last_names}`, email: s.email, gradeName: actualGradeName }]));
 
-   
+
     const tutorStudentRelations = await Tutors_Students.findAll({
       where: { student_id: studentIdsInGrade },
       attributes: ['tutor_id', 'student_id']
     });
 
-    
+
     if (!tutorStudentRelations || tutorStudentRelations.length === 0) {
       return res.status(200).json({
         id: gradeId,
@@ -111,7 +120,7 @@ const getEmailTutorsByGrade = async (req, res) => {
 
     const tutorIds = [...new Set(tutorStudentRelations.map(relation => relation.tutor_id))];
 
-   
+
     const tutorsData = await Tutors.findAll({
       where: { id: tutorIds },
       attributes: ['id', 'names', 'last_names', 'email']
@@ -132,11 +141,15 @@ const getEmailTutorsByGrade = async (req, res) => {
         .map(relation => relation.student_id);
 
       const studentsOfThisTutorInThisGrade = assignedStudentIdsForThisTutor
-        .map(studentId => studentsInGradeMap.get(studentId))
-        .filter(student => student); 
+        .map(studentId => {
+          const studentData = studentsInGradeMap.get(studentId);
+          // Ensure studentData exists and add gradeName
+          return studentData ? { ...studentData, gradeName: actualGradeName } : null;
+        })
+        .filter(student => student);
 
       return {
-        tutor_id: tutor.id,
+        id: tutor.id, // Changed from tutor_id to id to match frontend expectations
         name: `${tutor.names} ${tutor.last_names}`,
         email: tutor.email,
         students: studentsOfThisTutorInThisGrade
@@ -155,4 +168,4 @@ const getEmailTutorsByGrade = async (req, res) => {
   }
 };
 
-module.exports = { createTutor, getEmailTutorsByGrade };
+module.exports = { createTutor, getEmailTutorsByGrade, getEmailTutors };

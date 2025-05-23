@@ -11,6 +11,7 @@ const subjectRoutes = require("./routes/subjectRoutes.js");
 const communicationRoutes = require("./routes/communicationRoutes.js");
 const categoryRoutes = require("./routes/categoryRoutes.js");
 const secretaryRoutes = require("./routes/secretaryRoutes.js");
+const studentRoutes = require("./routes/studentRoutes.js");
 
 const app = express();
 app.use(morgan("dev"));
@@ -29,8 +30,9 @@ app.use("/api", subjectRoutes);
 app.use("/api", communicationRoutes);
 app.use("/api", categoryRoutes);
 app.use("/api", secretaryRoutes);
+app.use("/api", studentRoutes);
 
-  
-  app.listen(8080, () => {
+
+app.listen(8080, () => {
     console.log("Server is running on port 8080");
   });

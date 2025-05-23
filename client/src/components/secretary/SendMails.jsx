@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Radio, RadioGroup, FormControlLabel, FormControl, FormLabel, Typography } from '@mui/material';
+import { Box, Button, Typography } from '@mui/material';
 import TeachersMails from './TeachersMails';
 import GradeMails from './GradeMails';
 import TutorsMails from './TutorsMails';
@@ -8,9 +8,18 @@ import SubjectMails from './SubjectMails';
 function SendMails() {
   const [selectedOption, setSelectedOption] = useState('profesores'); // Default option
 
-  const handleOptionChange = (event) => {
-    setSelectedOption(event.target.value);
+  const handleOptionChange = (option) => {
+    setSelectedOption(option);
   };
+
+  const getButtonStyle = (option) => ({
+    backgroundColor: selectedOption === option ? '#2C965A' : '#1A6487',
+    color: 'white',
+    mr: 1, // Add some margin between buttons
+    '&:hover': {
+      backgroundColor: '#2C965A',
+    },
+  });
 
   const renderSelectedComponent = () => {
     switch (selectedOption) {
@@ -27,20 +36,29 @@ function SendMails() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <FormControl component="fieldset">
-        <FormLabel component="legend">Enviar correos a:</FormLabel>
-        <RadioGroup
-          row
-          aria-label="opciones de envío"
-          name="row-radio-buttons-group"
-          value={selectedOption}
-          onChange={handleOptionChange}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+        <Button
+          variant="contained"
+          onClick={() => handleOptionChange('estudiantes')}
+          sx={getButtonStyle('estudiantes')}
         >
-          <FormControlLabel value="estudiantes" control={<Radio />} label="Estudiantes" />
-          <FormControlLabel value="cursos" control={<Radio />} label="Cursos" />
-          <FormControlLabel value="profesores" control={<Radio />} label="Profesores" />
-        </RadioGroup>
-      </FormControl>
+          Estudiantes
+        </Button>
+        <Button
+          variant="contained"
+          onClick={() => handleOptionChange('cursos')}
+          sx={getButtonStyle('cursos')}
+        >
+          Cursos
+        </Button>
+        <Button
+          variant="contained"
+          onClick={() => handleOptionChange('profesores')}
+          sx={getButtonStyle('profesores')}
+        >
+          Profesores
+        </Button>
+      </Box>
 
       <Box sx={{ mt: 3 }}>
         {renderSelectedComponent()}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom'; // Added useNavigate
 import {
   Box,
   TextField,
@@ -31,6 +32,7 @@ function TeachersMails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const theme = useTheme();
+  const navigate = useNavigate(); // Initialized useNavigate
   const [grades, setGrades] = useState([]);
   const [selectedGradeId, setSelectedGradeId] = useState('');
   const [loadingGrades, setLoadingGrades] = useState(true);
@@ -132,6 +134,15 @@ function TeachersMails() {
   const allFilteredSelected = filteredTeachers.length > 0 && numSelectedInFiltered === filteredTeachers.length;
   const someFilteredSelected = filteredTeachers.length > 0 && numSelectedInFiltered > 0 && numSelectedInFiltered < filteredTeachers.length;
 
+  const handleComposeMessage = () => {
+    navigate('/secretary/compose-message', {
+      state: {
+        selectedEmails: Array.from(selectedEmails),
+        recipientType: 'Profesores',
+      }
+    });
+  };
+
   if (loadingGrades) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
@@ -139,13 +150,23 @@ function TeachersMails() {
       </Box>
     );
   }
+  if (loading && !error) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+        <CircularProgress />
+      </Box>
+    );
+  }
+  if (error) {
+    return (
+      <Typography color="error" sx={{ p: 2 }}>
+        Error al cargar profesores: {error}
+      </Typography>
+    );
+  }
 
   return (
     <Paper elevation={1} sx={{ width: '100%', p: theme.spacing(2), display: 'flex', flexDirection: 'column', gap: theme.spacing(2) }}>
-      <Typography variant="h6" gutterBottom>
-        Seleccionar Profesores
-      </Typography>
-
       {/* Modified Flexbox layout for controls */}
       <Box sx={{ display: 'flex', alignItems: 'stretch', width: '100%', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: theme.spacing(2), md: 0 } }}>
         {/* Group for Button + Search TextField */}
@@ -178,7 +199,7 @@ function TeachersMails() {
           <TextField
             fullWidth // Ensures TextField takes full width of its container
            // label="Buscar por nombre de profesor"
-           placeholder='Buscar por nombre de profesor'
+           placeholder='Buscar por nombre'
             variant="outlined"
             size="small"
             value={searchTerm}
@@ -271,106 +292,132 @@ function TeachersMails() {
 
       {/* Removed FormControlLabel for select all */}
 
-      {!loading && !error && (
-        <TableContainer component={Paper} sx={{ maxHeight: 350, border: '1px solid #ddd', borderTopLeftRadius: '10px', borderTopRightRadius: '10px' }}>
-          <Table stickyHeader size="small" aria-label="sticky table">
-            <TableHead>
-              <TableRow sx={{ '& th': { backgroundColor: '#228C3E', color: 'white' , borderBottom: 'none'} }}> {/* Changed background and text color */}
-               <TableCell sx={{ fontWeight: 'bold', borderTopLeftRadius: '10px' }}></TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Profesor</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Correo</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', borderTopRightRadius: '10px' }}>Materias</TableCell>
+      <TableContainer component={Paper} sx={{ maxHeight: 350, border: '1px solid #ddd', borderRadius: '10px' }}>
+        <Table stickyHeader size="small" aria-label="sticky table">
+          <TableHead>
+            <TableRow sx={{ '& th': { backgroundColor: '#228C3E', color: 'white' , borderBottom: 'none'} }}> {/* Changed background and text color */}
+             <TableCell sx={{ fontWeight: 'bold', borderTopLeftRadius: '10px' }}></TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Profesor</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Correo</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', borderTopRightRadius: '10px' }}>Materias</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={4} align="center">
+                  <Box display="flex" justifyContent="center" alignItems="center" minHeight="100px">
+                    <CircularProgress size={24}/> <Typography sx={{ml: 1}}>Cargando profesores...</Typography>
+                  </Box>
+                </TableCell>
               </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={4} align="center">
-                    <Box display="flex" justifyContent="center" alignItems="center" minHeight="100px">
-                      <CircularProgress size={24}/> <Typography sx={{ml: 1}}>Cargando profesores...</Typography>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ) : error ? (
-                <TableRow>
-                  <TableCell colSpan={4} align="center">
-                    <Typography color="error">Error al cargar profesores: {error}</Typography>
-                  </TableCell>
-                </TableRow>
-              ) : filteredTeachers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} align="center">
-                    <Typography sx={{ py: 2, fontSize: '0.875rem' }}>
-                      {allTeachers.length === 0 && !selectedGradeId ? "No hay profesores para mostrar." : "No se encontraron profesores que coincidan con los filtros."}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredTeachers.map((teacher) => (
-                  <TableRow
-                    onClick={() => handleToggleSelectTeacher(teacher.email)}
-                    role="checkbox"
-                    aria-checked={selectedEmails.has(teacher.email)}
-                    tabIndex={-1}
-                    key={teacher.id || teacher.email}
-                    selected={selectedEmails.has(teacher.email)}
-                    sx={{
-                      cursor: 'pointer',
-                      backgroundColor: '#1A6487',
-                      borderBottom: 'none', // Remove bottom border to avoid spacing
-                      '& .MuiTableCell-root': {
-                        color: 'white',
-                        borderBottom: 'none', // Remove cell bottom border
-                        padding: '6px 16px', // Adjust padding as needed, default is often 16px
-                      },
+            ) : error ? (
+              <TableRow>
+                <TableCell colSpan={4} align="center">
+                  <Typography color="error">Error al cargar profesores: {error}</Typography>
+                </TableCell>
+              </TableRow>
+            ) : filteredTeachers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} align="center">
+                  <Typography sx={{ py: 2, fontSize: '0.875rem' }}>
+                    {allTeachers.length === 0 && !selectedGradeId ? "No hay profesores para mostrar." : "No se encontraron profesores que coincidan con los filtros."}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredTeachers.map((teacher) => (
+                <TableRow
+                  onClick={() => handleToggleSelectTeacher(teacher.email)}
+                  role="checkbox"
+                  aria-checked={selectedEmails.has(teacher.email)}
+                  tabIndex={-1}
+                  key={teacher.id || teacher.email}
+                  selected={selectedEmails.has(teacher.email)}
+                  sx={{
+                    cursor: 'pointer',
+                    backgroundColor: '#1A6487',
+                    borderBottom: 'none', // Remove bottom border to avoid spacing
+                    '& .MuiTableCell-root': {
+                      color: 'white',
+                      borderBottom: 'none', // Remove cell bottom border
+                      padding: '6px 16px', // Adjust padding as needed, default is often 16px
+                    },
+                    '&:hover': {
+                      backgroundColor: '#3c90b4', // Lighter shade for hover (e.g., a lighter blue)
+                    },
+                    '&.Mui-selected': {
+                      backgroundColor: '#124A63',
                       '&:hover': {
-                        backgroundColor: '#3c90b4', // Lighter shade for hover (e.g., a lighter blue)
+                        backgroundColor: '#104055',
                       },
-                      '&.Mui-selected': {
-                        backgroundColor: '#124A63',
-                        '&:hover': {
-                          backgroundColor: '#104055',
-                        },
-                      },
+                    },
+                  }}
+                >
+                  <TableCell padding="checkbox"
+                    sx={{ // Specific sx for checkbox cell to ensure its border is also handled
+                      borderBottom: 'none !important',
                     }}
                   >
-                    <TableCell padding="checkbox"
-                      sx={{ // Specific sx for checkbox cell to ensure its border is also handled
-                        borderBottom: 'none !important',
-                      }}
-                    >
-                      <Checkbox
-                        size="small"
-                        checked={selectedEmails.has(teacher.email)}
-                        inputProps={{ 'aria-labelledby': `teacher-checkbox-${teacher.id || teacher.email}` }}
-                        sx={{ // Style checkbox for dark background
+                    <Checkbox
+                      size="small"
+                      checked={selectedEmails.has(teacher.email)}
+                      inputProps={{ 'aria-labelledby': `teacher-checkbox-${teacher.id || teacher.email}` }}
+                      sx={{ // Style checkbox for dark background
+                        color: 'white',
+                        '&.Mui-checked': {
                           color: 'white',
-                          '&.Mui-checked': {
-                            color: 'white',
-                          },
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell component="th" id={`teacher-checkbox-${teacher.id || teacher.email}`} scope="row">
-                      {teacher.name}
-                    </TableCell>
-                    <TableCell>{teacher.email}</TableCell>
-                    <TableCell>
-                      {(teacher.subjects && teacher.subjects.length > 0) ? teacher.subjects.join(', ') : 'N/A'}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
+                        },
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell component="th" id={`teacher-checkbox-${teacher.id || teacher.email}`} scope="row">
+                    {teacher.name}
+                  </TableCell>
+                  <TableCell>{teacher.email}</TableCell>
+                  <TableCell>
+                    {(teacher.subjects && teacher.subjects.length > 0) ? teacher.subjects.join(', ') : 'N/A'}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
-      {!loading && !error && selectedEmails.size > 0 && (
-        <Typography variant="caption" sx={{ mt: 0.5 }}>
+      {filteredTeachers.length > 0 && selectedEmails.size > 0 && (
+        <Typography variant="caption" sx={{ mt: 0.5, color: theme.palette.text.secondary }}>
           Total seleccionado: {selectedEmails.size} profesor(es).
         </Typography>
       )}
+
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 2, position: 'relative', width: '100%' }}>
+        <Button
+          variant="contained"
+          onClick={() => navigate('/secretary')}
+          sx={{
+            position: 'absolute',
+            left: 0,
+            backgroundColor: 'black',
+            color: 'white',
+            '&:hover': { backgroundColor: 'grey.700' }
+          }}
+        >
+          Cancelar
+        </Button>
+        <Button
+          variant="contained"
+          sx={{
+            backgroundColor: '#2C965A',
+            color: 'white',
+            '&:hover': { backgroundColor: '#278552' }
+          }}
+          onClick={handleComposeMessage} // Updated onClick handler
+          disabled={selectedEmails.size === 0} // Disable if no emails selected
+        >
+          Componer mensaje
+        </Button>
+      </Box>
     </Paper>
   );
 }
