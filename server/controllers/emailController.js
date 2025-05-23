@@ -1,7 +1,7 @@
 const transporter = require("../config/nodemailerConfig");
 
 const sendEmail = async (req, res) => {
-  const { to, subject, message } = req.body;
+  const { to, subject, message, html } = req.body;
 
   try {
     await transporter.sendMail({
@@ -9,6 +9,7 @@ const sendEmail = async (req, res) => {
       to, 
       subject, 
       text: message, 
+      html,
     });
 
     res.status(200).json({ message: "Correo enviado exitosamente" });
