@@ -1,322 +1,411 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  Box,
-  TextField,
-  List,
-  ListItem,
-  ListItemText,
-  Checkbox,
-  FormControlLabel,
-  Typography,
-  CircularProgress,
-  Paper,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Collapse,
-  ListSubheader,
-  useTheme
+    Box,
+    TextField,
+    Checkbox,
+    Typography,
+    CircularProgress,
+    Paper,
+    useTheme,
+    Select,
+    MenuItem,
+    FormControl,
+    Button,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
 } from '@mui/material';
 
 const GRADES_API_URL = 'http://localhost:8080/api/grades';
-const TUTORS_BY_GRADE_API_URL_BASE = 'http://localhost:8080/api/grade';
+const ALL_TUTORS_API_URL = 'http://localhost:8080/api/tutors/emails';
 
 function TutorsMails() {
   const [allGrades, setAllGrades] = useState([]);
   const [selectedGradeId, setSelectedGradeId] = useState('');
-  const [tutors, setTutors] = useState([]);
-  const [gradeName, setGradeName] = useState('');
-
+  const [allTutorsData, setAllTutorsData] = useState([]);
+  const [displayedTutors, setDisplayedTutors] = useState([]);
+  const [currentGradeName, setCurrentGradeName] = useState('Todos los Grados');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTutorEmails, setSelectedTutorEmails] = useState(new Set());
-
   const [loadingGrades, setLoadingGrades] = useState(true);
   const [errorGrades, setErrorGrades] = useState(null);
-  const [loadingTutors, setLoadingTutors] = useState(false);
+  const [loadingTutors, setLoadingTutors] = useState(true);
   const [errorTutors, setErrorTutors] = useState(null);
-
-  const [expandedTutors, setExpandedTutors] = useState(new Set());
   const theme = useTheme();
-
-  useEffect(() => {
-    console.log("Tutores seleccionados:", selectedTutorEmails);
-  }, [selectedTutorEmails]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchGrades = async () => {
       setLoadingGrades(true);
-      setErrorGrades(null);
       try {
         const response = await fetch(GRADES_API_URL);
-    
         if (!response.ok) {
-          throw new Error(`Error de red al cargar grados: ${response.status}`);
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
         setAllGrades(data.grades || []);
       } catch (e) {
         setErrorGrades(e.message || 'Error al cargar los grados.');
         console.error("Failed to fetch grades:", e);
-      } finally {
-        setLoadingGrades(false);
       }
+      setLoadingGrades(false);
     };
     fetchGrades();
   }, []);
 
   useEffect(() => {
-    if (!selectedGradeId) {
-      setTutors([]);
-      setGradeName('');
-      setSelectedTutorEmails(new Set());
-      setExpandedTutors(new Set());
-      return;
-    }
-
-    const fetchTutorsForGrade = async () => {
+    const fetchAllTutors = async () => {
       setLoadingTutors(true);
       setErrorTutors(null);
-      setSearchTerm('');
-      setSelectedTutorEmails(new Set());
-      setExpandedTutors(new Set());
-
       try {
-        const response = await fetch(`${TUTORS_BY_GRADE_API_URL_BASE}/${selectedGradeId}/tutor/emails`);
+        const response = await fetch(ALL_TUTORS_API_URL);
         if (!response.ok) {
-          throw new Error(`Error de red al cargar tutores: ${response.status} - ${response.statusText}`);
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        setTutors(data.tutors || []);
-        setGradeName(data.gradeName || `Grado ID ${selectedGradeId}`);
+        setAllTutorsData(data.tutors || []);
       } catch (e) {
-        setErrorTutors(e.message || 'Error al cargar los tutores del grado.');
-        console.error("Failed to fetch tutors for grade:", e);
-        setTutors([]);
-        setGradeName('');
-      } finally {
-        setLoadingTutors(false);
+        setErrorTutors(e.message || 'Error al cargar tutores.');
+        console.error("Failed to fetch all tutors:", e);
       }
+      setLoadingTutors(false);
     };
-    fetchTutorsForGrade();
-  }, [selectedGradeId]);
+    fetchAllTutors();
+  }, []);
+
+  useEffect(() => {
+    let tutorsToDisplay = [];
+    let gradeNameForDisplay = 'Todos los Grados';
+
+    if (!selectedGradeId) {
+      tutorsToDisplay = allTutorsData.map(tutor => ({
+        ...tutor,
+        studentsToDisplayInTable: tutor.students || [] 
+      }));
+    } else {
+      const gradeObj = allGrades.find(g => g.id.toString() === selectedGradeId.toString());
+      gradeNameForDisplay = gradeObj ? gradeObj.name : `ID ${selectedGradeId}`;
+
+      tutorsToDisplay = allTutorsData.map(tutor => {
+        const studentsInGrade = (tutor.students || []).filter(student => 
+          student.grade_id && student.grade_id.toString() === selectedGradeId.toString()
+        );
+        return {
+          ...tutor,
+          studentsToDisplayInTable: studentsInGrade
+        };
+      }).filter(tutor => tutor.studentsToDisplayInTable.length > 0);
+    }
+    setDisplayedTutors(tutorsToDisplay);
+    setCurrentGradeName(gradeNameForDisplay);
+    setSelectedTutorEmails(new Set());
+    setSearchTerm('');
+  }, [selectedGradeId, allTutorsData, allGrades]);
 
   const handleGradeChange = (event) => {
     setSelectedGradeId(event.target.value);
+    setSelectedTutorEmails(new Set()); 
   };
 
-  const filteredTutors = useMemo(() => {
+  const searchedTutors = useMemo(() => {
     if (!searchTerm.trim()) {
-      return tutors;
+      return displayedTutors;
     }
-    return tutors.filter(tutor =>
-      tutor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (tutor.email && tutor.email.toLowerCase().includes(searchTerm.toLowerCase()))
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    return displayedTutors.filter(tutor =>
+      tutor.name.toLowerCase().includes(lowerSearchTerm) ||
+      (tutor.email && tutor.email.toLowerCase().includes(lowerSearchTerm)) ||
+      (tutor.studentsToDisplayInTable && tutor.studentsToDisplayInTable.some(student => student.name.toLowerCase().includes(lowerSearchTerm)))
     );
-  }, [tutors, searchTerm]);
+  }, [displayedTutors, searchTerm]);
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
   };
 
   const handleToggleSelectTutor = useCallback((tutorEmail) => {
-    setSelectedTutorEmails(prevSelectedEmails => {
-      const newSelectedEmails = new Set(prevSelectedEmails);
-      if (newSelectedEmails.has(tutorEmail)) {
-        newSelectedEmails.delete(tutorEmail);
+    setSelectedTutorEmails(prev => {
+      const newSelected = new Set(prev);
+      if (newSelected.has(tutorEmail)) {
+        newSelected.delete(tutorEmail);
       } else {
-        newSelectedEmails.add(tutorEmail);
+        newSelected.add(tutorEmail);
       }
-      console.log("Selected Emails:", newSelectedEmails);
-      return newSelectedEmails;
+      return newSelected;
     });
   }, []);
 
-  const handleToggleExpandTutor = (tutorId) => {
-    setExpandedTutors(prevExpanded => {
-      const newExpanded = new Set(prevExpanded);
-      if (newExpanded.has(tutorId)) {
-        newExpanded.delete(tutorId);
-      } else {
-        newExpanded.add(tutorId);
+  const numSelectedInSearched = useMemo(() => {
+    return searchedTutors.filter(tutor => selectedTutorEmails.has(tutor.email)).length;
+  }, [searchedTutors, selectedTutorEmails]);
+
+  const allSearchedSelected = searchedTutors.length > 0 && numSelectedInSearched === searchedTutors.length;
+  const someSearchedSelected = searchedTutors.length > 0 && numSelectedInSearched > 0 && numSelectedInSearched < searchedTutors.length;
+
+  const handleSelectAllClick = useCallback(() => {
+    if (allSearchedSelected) {
+      setSelectedTutorEmails(new Set());
+    } else {
+      setSelectedTutorEmails(new Set(searchedTutors.map(t => t.email)));
+    }
+  }, [searchedTutors, allSearchedSelected]);
+
+  const handleComposeMessage = () => {
+    navigate('/secretary/compose-message', {
+      state: {
+        selectedEmails: Array.from(selectedTutorEmails),
+        recipientType: 'Tutores',
       }
-      return newExpanded;
     });
   };
 
-  const handleSelectAllChange = useCallback((event) => {
-    const isChecked = event.target.checked;
-    setSelectedTutorEmails(prevSelectedEmails => {
-      const newSelectedEmails = new Set(prevSelectedEmails);
-      if (isChecked) {
-        filteredTutors.forEach(tutor => newSelectedEmails.add(tutor.email));
-      } else {
-        filteredTutors.forEach(tutor => newSelectedEmails.delete(tutor.email));
-      }
-      return newSelectedEmails;
-    });
-  }, [filteredTutors]);
-
-  const numSelectedInFiltered = useMemo(() => {
-    return filteredTutors.filter(tutor => selectedTutorEmails.has(tutor.email)).length;
-  }, [filteredTutors, selectedTutorEmails]);
-
-  const allFilteredSelected = filteredTutors.length > 0 && numSelectedInFiltered === filteredTutors.length;
-  const someFilteredSelected = filteredTutors.length > 0 && numSelectedInFiltered > 0 && numSelectedInFiltered < filteredTutors.length;
-
-  if (loadingGrades) {
+  if (loadingGrades || loadingTutors) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-        <CircularProgress />
-        <Typography sx={{ ml: 2 }}>Cargando grados...</Typography>
+        <CircularProgress /> <Typography sx={{ ml: 2 }}>Cargando datos...</Typography>
       </Box>
     );
   }
 
-  if (errorGrades) {
-    return <Typography color="error" sx={{ p: 2 }}>Error al cargar grados: {errorGrades}</Typography>;
-  }
+  if (errorGrades) return <Typography color="error" sx={{ p: 2 }}>Error al cargar grados: {errorGrades}</Typography>;
+  if (errorTutors) return <Typography color="error" sx={{ p: 2 }}>Error al cargar tutores: {errorTutors}</Typography>;
 
   return (
-    <Paper elevation={1} sx={{ p: theme.spacing(1.5), display: 'flex', flexDirection: 'column', gap: theme.spacing(1.5) }}>
-      <Typography variant="subtitle1" gutterBottom>
-        Enviar Correos a Tutores por Grado
-      </Typography>
-
-      <FormControl fullWidth variant="outlined" size="small">
-        <InputLabel id="grade-select-label">Seleccionar Grado</InputLabel>
-        <Select
-          labelId="grade-select-label"
-          id="grade-select"
-          value={selectedGradeId}
-          onChange={handleGradeChange}
-          label="Seleccionar Grado"
-        >
-          <MenuItem value="">
-            <em>Ninguno</em>
-          </MenuItem>
-          {allGrades.map((grade) => (
-            <MenuItem key={grade.id} value={grade.id}>
-              {grade.name}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-
-      {selectedGradeId && loadingTutors && (
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="80px">
-          <CircularProgress size={24} />
-          <Typography variant="body2" sx={{ ml: 1.5 }}>Cargando tutores de {gradeName || 'este grado'}...</Typography>
-        </Box>
-      )}
-
-      {selectedGradeId && !loadingTutors && errorTutors && (
-        <Typography color="error" sx={{ p: 1.5 }}>
-          Error al cargar Tutores para {gradeName || 'el grado seleccionado'}: {errorTutors}
-        </Typography>
-      )}
-
-      {selectedGradeId && !loadingTutors && !errorTutors && (
-        <>
-          <Typography variant="subtitle2" gutterBottom sx={{ mt: 0.5 }}>
-            Tutores de: {gradeName}
-          </Typography>
+    <Paper elevation={1} sx={{ width: '100%', p: theme.spacing(2), display: 'flex', flexDirection: 'column', gap: theme.spacing(2), backgroundColor: theme.palette.background.paper }}>
+     
+      <Box sx={{ display: 'flex', alignItems: 'stretch', width: '100%', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: theme.spacing(2), md: 0 } }}>
+        <Box sx={{ display: 'flex', alignItems: 'stretch', width: { xs: '100%', md: 'auto' }, flexGrow: { md: 1 }, flexDirection: { xs: 'column', md: 'row' }, gap: { xs: theme.spacing(2), md: 0 } }}>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={handleSelectAllClick}
+            disabled={searchedTutors.length === 0}
+            sx={{
+              paddingInline: 5,
+              whiteSpace: 'nowrap',
+              borderTopLeftRadius: theme.shape.borderRadius,
+              borderBottomLeftRadius: theme.shape.borderRadius,
+              borderTopRightRadius: { xs: theme.shape.borderRadius, md: 0 },
+              borderBottomRightRadius: { xs: theme.shape.borderRadius, md: 0 },
+              zIndex: 1,
+              height: 'auto',
+              width: { xs: '100%', md: 'auto' },
+              backgroundColor: '#1A6487',
+              color: 'white',
+              '&:hover': {
+                backgroundColor: '#165270',
+              },
+            }}
+          >
+            {allSearchedSelected ? "Deseleccionar Todos" : "Seleccionar Todos"}
+          </Button>
           <TextField
             fullWidth
-            label="Buscar tutor por nombre o email"
+            placeholder="Buscar Tutores (Nombre, Email o Estudiante)"
             variant="outlined"
             size="small"
             value={searchTerm}
             onChange={handleSearchChange}
-            disabled={tutors.length === 0}
-          />
-          {tutors.length > 0 && (
-            <FormControlLabel
-              sx={{ mb: -1 }}
-              control={
-                <Checkbox
-                  size="small"
-                  checked={allFilteredSelected}
-                  indeterminate={someFilteredSelected}
-                  onChange={handleSelectAllChange}
-                  disabled={filteredTutors.length === 0}
-                />
+            disabled={allTutorsData.length === 0}
+            InputProps={{
+              sx: {
+                borderTopLeftRadius: { xs: theme.shape.borderRadius, md: 0 },
+                borderBottomLeftRadius: { xs: theme.shape.borderRadius, md: 0 },
+                borderTopRightRadius: theme.shape.borderRadius, 
+                borderBottomRightRadius: theme.shape.borderRadius, 
+                backgroundColor: '#0A3359',
+                color: 'white',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(255, 255, 255, 0.5)',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'white',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'white',
+                },
+                '& input::placeholder': { 
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  opacity: 1, 
+                },
               }
-              labelTypographyProps={{ fontSize: '0.875rem' }}
-              label={filteredTutors.length > 0 ? `Seleccionar ${filteredTutors.length} tutor(es) visible(s)` : "No hay tutores que coincidan"}
-            />
-          )}
-          <Box sx={{ maxHeight: 250, overflow: 'auto', border: '1px solid #ddd', borderRadius: 1 }}>
-            <List dense disablePadding>
-              {filteredTutors.length === 0 && !loadingTutors && (
-                <ListItem sx={{ py: 0.5 }}>
-                  <ListItemText 
-                    primaryTypographyProps={{ fontSize: '0.875rem' }}
-                    primary={tutors.length === 0 ? `No hay tutores en ${gradeName}.` : "No se encontraron tutores que coincidan."} 
-                  />
-                </ListItem>
-              )}
-              {filteredTutors.map((tutor) => (
-                <React.Fragment key={tutor.tutor_id}>
-                  <ListItem
-                    button
-                    sx={{ py: 0.25 }}
-                  >
-                    <Checkbox
-                      edge="start"
-                      checked={selectedTutorEmails.has(tutor.email)}
-                      onChange={() => handleToggleSelectTutor(tutor.email)}
-                      tabIndex={-1}
-                      disableRipple
-                      size="small"
-                    />
-                    <ListItemText
-                      primaryTypographyProps={{ fontSize: '0.875rem' }}
-                      secondaryTypographyProps={{ fontSize: '0.75rem' }}
-                      primary={tutor.name}
-                      secondary={tutor.email}
-                      onClick={() => handleToggleExpandTutor(tutor.tutor_id)}
-                      sx={{ cursor: 'pointer' }}
-                    />
-                  </ListItem>
-                  <Collapse in={expandedTutors.has(tutor.tutor_id)} timeout="auto" unmountOnExit>
-                    <List component="div" disablePadding dense sx={{ pl: 3, backgroundColor: 'rgba(0,0,0,0.02)' }}>
-                      {tutor.students && tutor.students.length > 0 ? (
-                        <>
-                          <ListSubheader sx={{ bgcolor: 'transparent', lineHeight: '28px', fontSize: '0.75rem', pt: 0.5, pb: 0.25 }}>
-                            Estudiantes Asignados:
-                          </ListSubheader>
-                          {tutor.students.map((student, index) => (
-                            <ListItem key={`${tutor.tutor_id}-student-${index}`} sx={{ py: 0.125 }}>
-                              <ListItemText
-                                primary={student.name}
-                                secondary={student.email}
-                                primaryTypographyProps={{ fontSize: '0.8rem' }}
-                                secondaryTypographyProps={{ fontSize: '0.7rem' }}
-                              />
-                            </ListItem>
-                          ))}
-                        </>
-                      ) : (
-                        <ListItem sx={{ py: 0.25 }}>
-                          <ListItemText primary="No tiene estudiantes asignados en este grado." primaryTypographyProps={{ style: { fontStyle: 'italic', fontSize: '0.75rem' } }}/>
-                        </ListItem>
-                      )}
-                    </List>
-                  </Collapse>
-                </React.Fragment>
-              ))}
-            </List>
-          </Box>
+            }}
+          />
+        </Box>
 
-          {selectedTutorEmails.size > 0 && (
-            <Typography variant="caption" sx={{ mt: 0.5 }}>
-              Total seleccionado: {selectedTutorEmails.size} tutor(es).
-            </Typography>
-          )}
-      
-        </>
+        <Box sx={{ width: { xs: '100%', md: '30%' }, minWidth: { md: '200px' }, flexShrink: { md: 0 } }}>
+          <FormControl fullWidth size="small" variant="outlined">
+            <Select
+              labelId="grade-select-label"
+              value={selectedGradeId}
+              onChange={handleGradeChange}
+              displayEmpty
+              sx={{
+                backgroundColor: '#1A6487',
+                color: 'white',
+                borderTopLeftRadius: { xs: theme.shape.borderRadius, md: 0 }, 
+                borderBottomLeftRadius: { xs: theme.shape.borderRadius, md: 0 },
+                borderTopRightRadius: theme.shape.borderRadius,
+                borderBottomRightRadius: theme.shape.borderRadius,
+                '.MuiSelect-icon': {
+                  color: 'white',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'white',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'white',
+                },
+                '.MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(255, 255, 255, 0.5)',
+                },
+                '& .MuiSelect-select.MuiSelect-select': { 
+                    color: 'white',
+                    '& em': { 
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        fontStyle: 'normal', 
+                    }
+                }
+              }}
+            >
+              <MenuItem value="" sx={{ color: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'inherit' }}> 
+                <em>Todos los Grados</em>
+              </MenuItem>
+              {allGrades.map((grade) => (
+                <MenuItem key={grade.id} value={grade.id} sx={{ color: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'inherit' }}>
+                  {grade.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+      </Box>
+
+           
+      <TableContainer component={Paper} sx={{ maxHeight: 450, border: '1px solid #ddd', borderRadius: '10px' }}>
+        <Table stickyHeader size="small" aria-label="tutors table">
+          <TableHead>
+            <TableRow sx={{ '& th': { backgroundColor: '#228C3E', color: 'white' , borderBottom: 'none'} }}>
+              <TableCell padding="checkbox" sx={{ fontWeight: 'bold', borderTopLeftRadius: '10px', width: '1%' }}>{/* Checkbox for select all is now the button above */}</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Estudiantes</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Tutor</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', borderTopRightRadius: '10px' }}>Grado(s)</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {searchedTutors.map((tutor) => (
+                <TableRow 
+                  key={tutor.id} 
+                  selected={selectedTutorEmails.has(tutor.email)}
+                  onClick={() => handleToggleSelectTutor(tutor.email)}
+                  sx={{
+                      cursor: 'pointer',
+                      backgroundColor: '#1A6487',
+                      borderBottom: 'none',
+                      '& .MuiTableCell-root': {
+                        color: 'white',
+                        borderBottom: 'none',
+                        padding: '6px 16px',
+                      },
+                      '&:hover': {
+                        backgroundColor: '#3c90b4',
+                      },
+                      '&.Mui-selected': {
+                        backgroundColor: '#124A63',
+                        '&:hover': {
+                          backgroundColor: '#104055',
+                        },
+                      },
+                    }}
+                >
+                  <TableCell 
+                    padding="checkbox"
+                    sx={{ borderBottom: 'none !important' }}
+                  >
+                    <Checkbox 
+                      checked={selectedTutorEmails.has(tutor.email)} 
+                      onChange={(event) => {
+                        event.stopPropagation(); 
+                        handleToggleSelectTutor(tutor.email);
+                      }}
+                      onClick={(event) => event.stopPropagation()}
+                      sx={{ 
+                        color: 'white',
+                        '&.Mui-checked': {
+                          color: 'white',
+                        },
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {(tutor.studentsToDisplayInTable && tutor.studentsToDisplayInTable.length > 0)
+                      ? tutor.studentsToDisplayInTable.map(s => s.name).join(', ')
+                      : 'N/A'}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body1" component="div">{tutor.name}</Typography>
+                    <Typography variant="caption" display="block">{tutor.email}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    {selectedGradeId
+                      ? currentGradeName
+                      : (tutor.studentsToDisplayInTable && tutor.studentsToDisplayInTable.length > 0)
+                        ? [...new Set(tutor.studentsToDisplayInTable.map(s => s.gradeName))].join(', ')
+                        : 'N/A'}
+                  </TableCell>
+                </TableRow>
+            ))}
+            {searchedTutors.length === 0 && (
+              <TableRow sx={{ '& td': { backgroundColor: theme.palette.background.paper, color: theme.palette.text.primary } }}>
+                <TableCell colSpan={4} align="center">
+                  <Typography sx={{ fontStyle: 'italic', p: 2 }}>
+                    {allTutorsData.length === 0 && !loadingTutors ? 'No hay tutores registrados en el sistema.' :
+                     displayedTutors.length === 0 && selectedGradeId ? `No se encontraron tutores para el grado ${currentGradeName}.` :
+                     searchTerm ? `No se encontraron tutores que coincidan con "${searchTerm}".` :
+                     'No hay tutores para mostrar según el filtro actual.'}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      {selectedTutorEmails.size > 0 && (
+        <Typography variant="caption" sx={{ mt: 1, display: 'block', textAlign: 'left' }}>
+          Total seleccionado: {selectedTutorEmails.size} tutor(es).
+        </Typography>
       )}
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 2, position: 'relative', width: '100%' }}>
+        <Button
+          variant="contained"
+          onClick={() => navigate('/secretary')}
+          sx={{
+            position: 'absolute',
+            left: 0,
+            backgroundColor: 'black',
+            color: 'white',
+            '&:hover': { backgroundColor: 'grey.700' }
+          }}
+        >
+          Cancelar
+        </Button>
+        <Button
+          variant="contained"
+          sx={{
+            backgroundColor: '#2C965A',
+            color: 'white',
+            '&:hover': { backgroundColor: '#278552' }
+          }}
+          onClick={handleComposeMessage} // Updated onClick handler
+          disabled={selectedTutorEmails.size === 0} // Disable if no emails selected
+        >
+          Componer mensaje
+        </Button>
+      </Box>
     </Paper>
   );
 }
