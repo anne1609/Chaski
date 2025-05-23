@@ -1,13 +1,13 @@
 'use strict';
 
 module.exports = (sequelize, DataTypes) => {
-    const Teachers_communications = sequelize.define('teachers_communications', {
+    const Teachers_communications = sequelize.define('Teachers_communications', {
         teacher_id: {
             type: DataTypes.INTEGER,
             allowNull: false,
             primaryKey: true,
             references: {
-                model: 'users',
+                model: 'teachers',
                 key: 'id',
             },
         },
@@ -28,6 +28,7 @@ module.exports = (sequelize, DataTypes) => {
         date_confirmed: {
             type: DataTypes.DATE,
             allowNull: true,
+            defaultValue: DataTypes.NOW,
         },
         presence: {
             type: DataTypes.BOOLEAN,
@@ -47,7 +48,7 @@ module.exports = (sequelize, DataTypes) => {
         });
         Teachers_communications.belongsTo(models.Communications, {
             foreignKey: 'communication_id',
-            as: 'communication',
+            as: 'communications',
         });
     }
     return Teachers_communications;
