@@ -21,10 +21,10 @@ function NavBar() {
 
         <div className="collapse navbar-collapse" id="navbarNavAltMarkup">
           <div className="navbar-nav mx-auto text-center">
-            {pathname === '/secretary' && (
+            {pathname !== '/login' && (
               <>
                 <Link
-                  to="/secretary/messages"
+                  to="/secretary"
                   className="btn mx-2 my-1"
                   style={{ color: 'white', fontSize: '16px', borderRadius: '10px', backgroundColor: '#1A6487', minWidth: '260px' }}
                 >
@@ -44,7 +44,7 @@ function NavBar() {
                 >
                   Enviar Correos
                 </Link>
-            </>
+              </>
             )}
           </div>
           {currentNav && (

@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import './App.css';
 import AppRoutes from './router/index';
 import NavBar from './components/NavBar';
+import Login from './components/Login';
 import { ThemeProvider } from '@mui/material/styles';
 import theme from './theme';
 function App() {
