@@ -8,12 +8,12 @@ module.exports = {
                     {
                         model: Teachers,
                         as: 'teachers',
-                        attributes: ['id', 'last_names', 'email'],
+                        attributes: ['names', 'last_names', 'email'],
                     },
                     {
                         model: Communications,
                         as: 'communications',
-                        attributes: ['id', 'subject', 'body'],
+                        attributes: ['subject', 'body', 'priority', 'status'],
                     },
                 ],
             });
@@ -38,12 +38,13 @@ module.exports = {
                     {
                         model: Teachers,
                         as: 'teachers',
-                        attributes: ['id', 'last_names', 'email'],
+                        attributes: ['names', 'last_names', 'email'],
                     },
                     {
                         model: Communications,
                         as: 'communications',
-                        attributes: ['id', 'subject', 'body'],
+                        attributes: ['subject', 'body', 'priority', 'status'],
+
                     },
                 ],
             });

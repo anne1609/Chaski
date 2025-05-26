@@ -51,8 +51,7 @@ module.exports = {
                         model: Categories,
                         as: 'category',
                         attributes: ['id', 'name'],
-                    },
-                    
+                    },                    
                 ],
             });
             if (!communication) {
