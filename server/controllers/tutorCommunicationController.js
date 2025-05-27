@@ -1,17 +1,17 @@
-const {tutors_communications, tutors, communications} = require('../models');
+const {Tutors_Communications, Tutors, Communications} = require('../models');
 
 module.exports = {
     async getAllTutorsCommunications(req, res) {
         try {
-            const tutorsCommunications = await tutors_communications.findAll({
+            const tutorsCommunications = await Tutors_Communications.findAll({
                 include: [
                     {
-                        model: tutors,
+                        model: Tutors,
                         as: 'tutors',
                         attributes: ['names', 'last_names', 'email'],
                     },
                     {
-                        model: communications,
+                        model: Communications,
                         as: 'communications',
                         attributes: ['subject', 'body', 'priority', 'status'],
                     },
@@ -29,19 +29,19 @@ module.exports = {
     async getTutorCommunicationById(req, res) {
         const {tutor_id, communication_id} = req.params;
         try {
-            const tutorCommunication = await tutors_communications.findOne({
+            const tutorCommunication = await Tutors_Communications.findOne({
                 where: {
                     communication_id,
                     tutor_id,
                 },
                 include: [
                     {
-                        model: tutors,
+                        model: Tutors,
                         as: 'tutors',
                         attributes: ['names', 'last_names', 'email'],
                     },
                     {
-                        model: communications,
+                        model: Communications,
                         as: 'communications',
                         attributes: ['subject', 'body', 'priority', 'status'],
                     },
@@ -59,7 +59,7 @@ module.exports = {
     async createTutorCommunication(req, res) {
         const {tutor_id, communication_id} = req.body;
         try {
-            const newTutorCommunication = await tutors_communications.create({
+            const newTutorCommunication = await Tutors_Communications.create({
                 tutor_id,
                 communication_id,
             });
@@ -74,7 +74,7 @@ module.exports = {
         const { status } = req.body;
 
         try {
-            const [updated] = await tutors_communications.update(
+            const [updated] = await Tutors_Communications.update(
                 { status },
                 {
                     where: {
@@ -85,7 +85,7 @@ module.exports = {
             );
 
             if (updated) {
-                const updatedCommunication = await tutors_communications.findOne({
+                const updatedCommunication = await Tutors_Communications.findOne({
                     where: { tutor_id, communication_id },
                 });
                 return res.status(200).json(updatedCommunication);
@@ -100,7 +100,7 @@ module.exports = {
         const { tutor_id, communication_id } = req.params;
 
         try {
-            const deleted = await tutors_communications.destroy({
+            const deleted = await Tutors_Communications.destroy({
                 where: {
                     tutor_id,
                     communication_id,
@@ -113,6 +113,31 @@ module.exports = {
             throw new Error('Communication not found');
         } catch (error) {
             console.error('Error deleting tutor communication:', error);
+            return res.status(500).json({ message: 'Error interno del servidor' });
+        }
+    },
+    async confirmAttendance(req, res) {
+        const { communication_id,tutor_id,confirmed } = req.query;
+        try {
+            const attendance = await Tutors_Communications.findOne({
+                where: {
+                    communication_id,
+                    tutor_id,
+                },
+            });
+
+            if (!attendance) {
+                return res.status(404).json({ message: 'No se encontró la asistencia del tutor' });
+            }
+            attendance.confirmed = confirmed === '1';
+            await attendance.save();
+            if (attendance.confirmed) {
+                return res.status(200).json({ message: 'Asistencia confirmada' });
+            } else {
+                return res.status(200).json({ message: 'Asistencia rechazada' });
+            }
+        } catch (error) {
+            console.error('Error confirming attendance:', error);
             return res.status(500).json({ message: 'Error interno del servidor' });
         }
     },

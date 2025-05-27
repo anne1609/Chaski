@@ -53,6 +53,7 @@ function Message() {
   const [subject, setSubject] = useState('');
   const [messageBody, setMessageBody] = useState('');
   const [confirmAttendance, setConfirmAttendance] = useState(false);
+  const [priority, setPriority] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -70,13 +71,62 @@ function Message() {
     }
   };
 
-  // Placeholder handlers for save and send
-  const handleSave = () => {
-    console.log('Guardar mensaje:', { recipientType, selectedEmails, messageType, subject, messageBody, confirmAttendance, selectedFile, selectedDate, selectedTime });
-     };
   const handleSend = () => {
-    console.log('Enviar mensaje:', { recipientType, selectedEmails, messageType, subject, messageBody, confirmAttendance, selectedFile, selectedDate, selectedTime });
+    console.log('Enviar mensaje:', { recipientType, selectedEmails, messageType, subject, messageBody, confirmAttendance, priority, selectedFile, selectedDate, selectedTime });
   };
+  
+  const handleSave = async () => {
+    console.log('Guardar mensaje:', { recipientType, selectedEmails, messageType, subject, messageBody, confirmAttendance,  priority, selectedFile, selectedDate, selectedTime });
+    const hasStudents = recipientType.toLowerCase().includes('Estudiantes');
+    const hasTutors = recipientType.toLowerCase().includes('Tutores');
+    const hasTeachers = recipientType.toLowerCase().includes('Profesores');
+    const payload = {
+    category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
+    secretary_id: 1,
+    teacher_id: null,
+    subject,
+    body: messageBody,
+    status: 'Guardado',
+    priority: priority || 1,
+    };
+
+    try {
+      let url = 'http://localhost:8080/api/communication';
+      let bodyToSend = payload;
+
+      if (hasStudents) {
+        url = 'http://localhost:8080/api/students-communications';
+        bodyToSend = {
+          ...payload,
+          students: selectedEmails,
+        };
+      } else if (hasTutors) {
+        url = 'http://localhost:8080/api/tutors-communications';
+        bodyToSend = {
+          ...payload,
+          tutors: selectedEmails,
+        };
+      } else if (hasTeachers) {
+        url = 'http://localhost:8080/api/teachers-communications';
+        bodyToSend = {
+          ...payload,
+          teachers: selectedEmails,
+        };
+      }
+      const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bodyToSend),
+      });
+
+      if (!response.ok) throw new Error('Error al guardar el mensaje');
+      alert('Mensaje guardado correctamente');
+      navigate(-1);
+    } catch (error) {
+    console.error('Error al guardar el mensaje:', error);
+    alert('Error al guardar el mensaje: ' + error.message);
+    }
+  }
 
   return (
     <Paper sx={{ p: 3, m: 2, borderRadius: '8px' }}>
@@ -200,8 +250,8 @@ function Message() {
               Selecciona un tipo
             </MenuItem>
             <MenuItem value="citacion">Citación</MenuItem>
-            <MenuItem value="aviso">Tipo Aviso</MenuItem>
-            <MenuItem value="mensaje">Tipo Mensaje</MenuItem>
+            <MenuItem value="aviso">Aviso</MenuItem>
+            <MenuItem value="mensaje">Mensaje</MenuItem>
           </Select>
         </FormControl>
         <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, justifyContent: 'flex-end' }}> {/* Added justifyContent: 'flex-end' */}
@@ -301,7 +351,7 @@ function Message() {
 
       </Grid>
       {/* Row for Subject Input - NOW SECOND, in its own full-width box */}
-      <Grid item xs={12} sx={{ mb: 2 }}>
+      <Grid item xs={12} sx={{ mb: 2, display: 'flex', flexDirection: 'row', gap: 1, width: '100%', justifyContent: 'space-between' }}>
         <Box >
           <TextField
             //   label="Asunto"
@@ -317,8 +367,9 @@ function Message() {
                 // borderTopRightRadius: { xs: theme.shape.borderRadius, md: 0 }, // Removed for consistency
                 // borderBottomRightRadius: { xs: theme.shape.borderRadius, md: 0 }, // Removed for consistency
                 borderRadius: '4px', // Apply consistent border radius
-                backgroundColor: '#1A6487', // Changed from #0A3359
-                color: 'white',
+                backgroundColor: '#1A6487', // Changed from #0A3359                
+                minWidth: '70vw', // Ensure full width
+                color: 'white',                
                 '& .MuiOutlinedInput-notchedOutline': {
                   borderColor: 'rgba(255, 255, 255, 0.5)',
                   // borderRightWidth: { xs: 1, md: 0 }, // Removed for consistency
@@ -337,6 +388,43 @@ function Message() {
               }
             }}
             InputLabelProps={{ // This might not be needed if using placeholder
+              sx: {
+                color: 'rgba(255, 255, 255, 0.7)',
+                '&.Mui-focused': {
+                  color: 'white',
+                }
+              }
+            }}
+          />
+        </Box>
+        <Box>
+          <TextField
+            fullWidth
+            placeholder='Prioridad'
+            size="small"
+            value={priority}
+            onChange={(e) => setPriority(e.target.value)}
+            InputProps={{
+              sx: {
+                borderRadius: '4px',
+                backgroundColor: '#1A6487',                
+                color: 'white',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(255, 255, 255, 0.5)',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'white',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'white',
+                },
+                '& input::placeholder': { // Style placeholder
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  opacity: 1, // Ensure placeholder is visible
+                },
+              }
+            }}
+            InputLabelProps={{
               sx: {
                 color: 'rgba(255, 255, 255, 0.7)',
                 '&.Mui-focused': {

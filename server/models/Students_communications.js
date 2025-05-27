@@ -8,14 +8,14 @@ module.exports = (sequelize, DataTypes) => {
       if (models.Students) {
         Students_Communications.belongsTo(models.Students, {
           foreignKey: 'student_id',
-          as: 'student',
+          as: 'students',
         });
       }
       
       if (models.Communications) {
         Students_Communications.belongsTo(models.Communications, {
           foreignKey: 'communication_id',
-          as: 'communication',
+          as: 'communications',
         });
       }
     }
