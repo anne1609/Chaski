@@ -89,7 +89,7 @@ function CommunicationsStatus({ role }) {
               }}
             >
               <TableRow>
-                <TableCell>Destinatario</TableCell>
+                <TableCell>Asunto</TableCell>
                 <TableCell>prioridad</TableCell>
                 <TableCell>Tipo de Mensaje</TableCell>
                 <TableCell>Mensaje</TableCell>
