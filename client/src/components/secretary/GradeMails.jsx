@@ -1,173 +1,190 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom'; // Added useNavigate
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  Box,
-  TextField,
-  Checkbox,
-  Typography,
-  CircularProgress,
-  Paper,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Button, // Added Button
+    Box,
+    TextField,
+    Checkbox,
+    Typography,
+    CircularProgress,
+    Paper,
+    useTheme,
+    Select,
+    MenuItem,
+    FormControl,
+    Button,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
 } from '@mui/material';
-import { useTheme, alpha } from '@mui/material/styles';
 
 const GRADES_API_URL = 'http://localhost:8080/api/grades';
-const STUDENTS_API_URL = 'http://localhost:8080/api/students';
+const ALL_TUTORS_API_URL = 'http://localhost:8080/api/tutors/emails';
 
 function GradeMails() {
-  const theme = useTheme();
-  const navigate = useNavigate(); // Initialized useNavigate
   const [allGrades, setAllGrades] = useState([]);
   const [selectedGradeId, setSelectedGradeId] = useState('');
-  const [allStudentsData, setAllStudentsData] = useState([]);
-  const [displayedStudents, setDisplayedStudents] = useState([]);
+  const [allTutorsData, setAllTutorsData] = useState([]);
+  const [displayedTutors, setDisplayedTutors] = useState([]);
+  const [currentGradeName, setCurrentGradeName] = useState('Todos los Grados');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStudentEmails, setSelectedStudentEmails] = useState(new Set());
+  const [selectedTutorEmails, setSelectedTutorEmails] = useState(new Set());
   const [loadingGrades, setLoadingGrades] = useState(true);
   const [errorGrades, setErrorGrades] = useState(null);
-  const [loadingStudents, setLoadingStudents] = useState(false);
-  const [errorStudents, setErrorStudents] = useState(null);
+  const [loadingTutors, setLoadingTutors] = useState(true);
+  const [errorTutors, setErrorTutors] = useState(null);
+  const theme = useTheme();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchGrades = async () => {
       setLoadingGrades(true);
-      setErrorGrades(null);
       try {
         const response = await fetch(GRADES_API_URL);
         if (!response.ok) {
-          throw new Error(`Error de red al cargar grados: ${response.status}`);
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
         setAllGrades(data.grades || []);
       } catch (e) {
         setErrorGrades(e.message || 'Error al cargar los grados.');
         console.error("Failed to fetch grades:", e);
-      } finally {
-        setLoadingGrades(false);
       }
+      setLoadingGrades(false);
     };
     fetchGrades();
   }, []);
 
   useEffect(() => {
-    const fetchAllStudents = async () => {
-      setLoadingStudents(true);
-      setErrorStudents(null);
+    const fetchAllTutors = async () => {
+      setLoadingTutors(true);
+      setErrorTutors(null);
       try {
-        const response = await fetch(STUDENTS_API_URL);
+        const response = await fetch(ALL_TUTORS_API_URL);
         if (!response.ok) {
-          throw new Error(`Error de red al cargar estudiantes: ${response.status}`);
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        setAllStudentsData(Array.isArray(data) ? data : []);
+        setAllTutorsData(data.tutors || []);
       } catch (e) {
-        setErrorStudents(e.message || 'Error al cargar los estudiantes.');
-        console.error("Failed to fetch students:", e);
-        setAllStudentsData([]);
-      } finally {
-        setLoadingStudents(false);
+        setErrorTutors(e.message || 'Error al cargar tutores.');
+        console.error("Failed to fetch all tutors:", e);
       }
+      setLoadingTutors(false);
     };
-    fetchAllStudents();
+    fetchAllTutors();
   }, []);
 
   useEffect(() => {
-    let filtered = allStudentsData;
+    // Aplicar filtros a los tutores
+    let tutorsToDisplay = allTutorsData.map(tutor => ({
+      ...tutor,
+      studentsToDisplayInTable: tutor.students || [] 
+    }));
 
+    // Filtrar por grado si está seleccionado
     if (selectedGradeId) {
-      filtered = filtered.filter(student => student.grade_id === selectedGradeId);
+      tutorsToDisplay = tutorsToDisplay.map(tutor => {
+        const studentsInGrade = (tutor.students || []).filter(student => 
+          student.grade_id && student.grade_id.toString() === selectedGradeId.toString()
+        );
+        return {
+          ...tutor,
+          studentsToDisplayInTable: studentsInGrade
+        };
+      }).filter(tutor => tutor.studentsToDisplayInTable.length > 0);
     }
 
-    if (searchTerm.trim()) {
-      const lowerSearchTerm = searchTerm.toLowerCase();
-      filtered = filtered.filter(student =>
-        (student.fullName && student.fullName.toLowerCase().includes(lowerSearchTerm))
-        // (student.email && student.email.toLowerCase().includes(lowerSearchTerm)) // Removed email search
-      );
-    }
-    setDisplayedStudents(filtered);
-  }, [allStudentsData, selectedGradeId, searchTerm]);
+    setDisplayedTutors(tutorsToDisplay);
+    
+    // Actualizar nombre del grado
+    const gradeObj = allGrades.find(g => g.id.toString() === selectedGradeId.toString());
+    const gradeNameForDisplay = selectedGradeId && gradeObj ? gradeObj.name : 'Todos los Grados';
+    setCurrentGradeName(gradeNameForDisplay);
+    
+    // Limpiar selecciones cuando cambia el filtro
+    setSelectedTutorEmails(new Set());
+  }, [selectedGradeId, allTutorsData, allGrades]);
 
   const handleGradeChange = (event) => {
     setSelectedGradeId(event.target.value);
-    setSelectedStudentEmails(new Set());
+    setSelectedTutorEmails(new Set()); 
   };
+
+  const searchedTutors = useMemo(() => {
+    if (!searchTerm.trim()) {
+      return displayedTutors;
+    }
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    return displayedTutors.filter(tutor =>
+      tutor.name.toLowerCase().includes(lowerSearchTerm) ||
+      (tutor.email && tutor.email.toLowerCase().includes(lowerSearchTerm)) ||
+      (tutor.studentsToDisplayInTable && tutor.studentsToDisplayInTable.some(student => student.name.toLowerCase().includes(lowerSearchTerm)))
+    );
+  }, [displayedTutors, searchTerm]);
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
   };
 
-  const handleToggleSelectStudent = useCallback((studentEmail) => {
-    setSelectedStudentEmails(prevSelectedEmails => {
-      const newSelectedEmails = new Set(prevSelectedEmails);
-      if (newSelectedEmails.has(studentEmail)) {
-        newSelectedEmails.delete(studentEmail);
+  const handleToggleSelectTutor = useCallback((tutorEmail) => {
+    setSelectedTutorEmails(prev => {
+      const newSelected = new Set(prev);
+      if (newSelected.has(tutorEmail)) {
+        newSelected.delete(tutorEmail);
       } else {
-        newSelectedEmails.add(studentEmail);
+        newSelected.add(tutorEmail);
       }
-      return newSelectedEmails;
+      return newSelected;
     });
   }, []);
 
-  const handleSelectAllChange = useCallback((event) => {
-    if (event.target.checked) {
-      const newSelectedEmails = new Set(displayedStudents.map(student => student.email));
-      setSelectedStudentEmails(newSelectedEmails);
+  const numSelectedInSearched = useMemo(() => {
+    return searchedTutors.filter(tutor => selectedTutorEmails.has(tutor.email)).length;
+  }, [searchedTutors, selectedTutorEmails]);
+
+  const allSearchedSelected = searchedTutors.length > 0 && numSelectedInSearched === searchedTutors.length;
+
+  const handleSelectAllClick = useCallback(() => {
+    if (allSearchedSelected) {
+      setSelectedTutorEmails(new Set());
     } else {
-      setSelectedStudentEmails(new Set());
+      setSelectedTutorEmails(new Set(searchedTutors.map(t => t.email)));
     }
-  }, [displayedStudents]);
+  }, [searchedTutors, allSearchedSelected]);
 
   const handleComposeMessage = () => {
     navigate('/secretary/compose-message', {
       state: {
-        selectedEmails: Array.from(selectedStudentEmails),
-        recipientType: 'Estudiantes',
+        selectedEmails: Array.from(selectedTutorEmails),
+        recipientType: 'Tutores',
       }
     });
   };
 
-  if (loadingGrades) {
+  if (loadingGrades || loadingTutors) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-        <CircularProgress />
-        <Typography sx={{ ml: 2 }}>Cargando datos iniciales...</Typography>
+        <CircularProgress /> <Typography sx={{ ml: 2 }}>Cargando datos...</Typography>
       </Box>
     );
   }
 
-  if (errorGrades) {
-    return <Typography color="error" sx={{ p: 2 }}>Error al cargar grados: {errorGrades}</Typography>;
-  }
-
-  const selectedGradeName = selectedGradeId ? allGrades.find(g => g.id === selectedGradeId)?.name : "Todos los Cursos";
-
-  const areAllDisplayedStudentsSelected = displayedStudents.length > 0 && selectedStudentEmails.size === displayedStudents.length;
-  const areSomeDisplayedStudentsSelected = displayedStudents.length > 0 && selectedStudentEmails.size > 0 && selectedStudentEmails.size < displayedStudents.length;
+  if (errorGrades) return <Typography color="error" sx={{ p: 2 }}>Error al cargar grados: {errorGrades}</Typography>;
+  if (errorTutors) return <Typography color="error" sx={{ p: 2 }}>Error al cargar tutores: {errorTutors}</Typography>;
 
   return (
-    <Paper elevation={1} sx={{ width: '100%', p: theme.spacing(2), display: 'flex', flexDirection: 'column', gap: theme.spacing(2) }}>
-      {/* Removed Typography title - can be added back if needed outside this structure */}
-
-      {/* Modified Flexbox layout for controls - similar to TeachersMails */}
+    <Paper elevation={1} sx={{ width: '100%', p: theme.spacing(2), display: 'flex', flexDirection: 'column', gap: theme.spacing(2), backgroundColor: theme.palette.background.paper }}>
+     
       <Box sx={{ display: 'flex', alignItems: 'stretch', width: '100%', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: theme.spacing(2), md: 0 } }}>
-        {/* Group for Button + Search TextField */}
         <Box sx={{ display: 'flex', alignItems: 'stretch', width: { xs: '100%', md: 'auto' }, flexGrow: { md: 1 }, flexDirection: { xs: 'column', md: 'row' }, gap: { xs: theme.spacing(2), md: 0 } }}>
           <Button
             variant="contained"
             size="small"
-            onClick={() => handleSelectAllChange({ target: { checked: !areAllDisplayedStudentsSelected } })}
-            disabled={loadingStudents || displayedStudents.length === 0}
+            onClick={handleSelectAllClick}
+            disabled={searchedTutors.length === 0}
             sx={{
               paddingInline: 5,
               whiteSpace: 'nowrap',
@@ -185,28 +202,26 @@ function GradeMails() {
               },
             }}
           >
-            {areAllDisplayedStudentsSelected ? "Deseleccionar Todos" : "Seleccionar Todos"}
+            {allSearchedSelected ? "Deseleccionar Todos" : "Seleccionar Todos"}
           </Button>
           <TextField
             fullWidth
-            placeholder="Buscar por nombre"
+            placeholder="Buscar Tutores (Nombre, Email o Estudiante)"
             variant="outlined"
             size="small"
             value={searchTerm}
             onChange={handleSearchChange}
-            disabled={loadingStudents || allStudentsData.length === 0}
+            disabled={allTutorsData.length === 0}
             InputProps={{
               sx: {
                 borderTopLeftRadius: { xs: theme.shape.borderRadius, md: 0 },
                 borderBottomLeftRadius: { xs: theme.shape.borderRadius, md: 0 },
-                borderTopRightRadius: { xs: theme.shape.borderRadius, md: 0 }, // Adjusted for consistency
-                borderBottomRightRadius: { xs: theme.shape.borderRadius, md: 0 }, // Adjusted for consistency
+                borderTopRightRadius: theme.shape.borderRadius, 
+                borderBottomRightRadius: theme.shape.borderRadius, 
                 backgroundColor: '#0A3359',
                 color: 'white',
                 '& .MuiOutlinedInput-notchedOutline': {
                   borderColor: 'rgba(255, 255, 255, 0.5)',
-                  borderRightWidth: { xs: 1, md: 0 },
-                  borderLeftWidth: { xs: 1, md: 1 },
                 },
                 '&:hover .MuiOutlinedInput-notchedOutline': {
                   borderColor: 'white',
@@ -214,37 +229,29 @@ function GradeMails() {
                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                   borderColor: 'white',
                 },
-              }
-            }}
-            InputLabelProps={{
-              sx: {
-                color: 'rgba(255, 255, 255, 0.7)',
-                '&.Mui-focused': {
-                  color: 'white',
-                }
+                '& input::placeholder': { 
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  opacity: 1, 
+                },
               }
             }}
           />
         </Box>
 
-        {/* Filter Box */}
-        <Box sx={{ width: { xs: '100%', md: '30%' }, minWidth: { md: '180px' }, flexShrink: { md: 0 } }}>
+        <Box sx={{ width: { xs: '100%', md: '30%' }, minWidth: { md: '200px' }, flexShrink: { md: 0 } }}>
           <FormControl fullWidth size="small" variant="outlined">
-            {/* <InputLabel id="grade-filter-label">Filtrar por Curso</InputLabel> // Optional if placeholder is enough */}
             <Select
-              labelId="grade-filter-label"
+              labelId="grade-select-label"
               value={selectedGradeId}
-              // label="Filtrar por Curso" // Remove label if using displayEmpty or placeholder logic
               onChange={handleGradeChange}
               displayEmpty
-              disabled={loadingStudents || allGrades.length === 0}
               sx={{
                 backgroundColor: '#1A6487',
                 color: 'white',
-                borderTopLeftRadius: { xs: theme.shape.borderRadius, md: 0 },
+                borderTopLeftRadius: { xs: theme.shape.borderRadius, md: 0 }, 
                 borderBottomLeftRadius: { xs: theme.shape.borderRadius, md: 0 },
-                borderTopRightRadius: theme.shape.borderRadius, // Keep rounded on the right
-                borderBottomRightRadius: theme.shape.borderRadius, // Keep rounded on the right
+                borderTopRightRadius: theme.shape.borderRadius,
+                borderBottomRightRadius: theme.shape.borderRadius,
                 '.MuiSelect-icon': {
                   color: 'white',
                 },
@@ -257,13 +264,20 @@ function GradeMails() {
                 '.MuiOutlinedInput-notchedOutline': {
                   borderColor: 'rgba(255, 255, 255, 0.5)',
                 },
+                '& .MuiSelect-select.MuiSelect-select': { 
+                    color: 'white',
+                    '& em': { 
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        fontStyle: 'normal', 
+                    }
+                }
               }}
             >
-              <MenuItem value="">
-                <em>Todos los Cursos</em>
+              <MenuItem value="" sx={{ color: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'inherit' }}> 
+                <em>Todos los Grados</em>
               </MenuItem>
               {allGrades.map((grade) => (
-                <MenuItem key={grade.id} value={grade.id} sx={{ color: theme.palette.text.primary }}> {/* Ensure dropdown items have standard text color */}
+                <MenuItem key={grade.id} value={grade.id} sx={{ color: theme.palette.mode === 'dark' ? theme.palette.text.primary : 'inherit' }}>
                   {grade.name}
                 </MenuItem>
               ))}
@@ -272,98 +286,100 @@ function GradeMails() {
         </Box>
       </Box>
 
-      {loadingStudents && (
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="100px">
-          <CircularProgress size={24} /> <Typography sx={{ ml: 1 }}>Cargando estudiantes...</Typography>
-        </Box>
-      )}
-      {errorStudents && !loadingStudents && (
-        <Typography color="error" sx={{ p: 2 }}>Error al cargar estudiantes: {errorStudents}</Typography>
-      )}
-
-      {!loadingStudents && !errorStudents && (
-        <TableContainer component={Paper} sx={{ maxHeight: 350, border: '1px solid #ddd', borderTopLeftRadius: '10px', borderTopRightRadius: '10px' }}>
-          <Table stickyHeader size="small" aria-label="tabla de estudiantes">
-            <TableHead>
-              <TableRow sx={{ '& th': { backgroundColor: '#228C3E', color: 'white', borderBottom: 'none' } }}>
-                <TableCell sx={{ fontWeight: 'bold', borderTopLeftRadius: '10px' }}></TableCell> {/* Checkbox cell, no text */}
-                <TableCell sx={{ fontWeight: 'bold' }}>Estudiante</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Correo</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', borderTopRightRadius: '10px' }}>Curso</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {displayedStudents.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} align="center">
-                    <Typography sx={{ py: 2, fontSize: '0.875rem', color: theme.palette.text.secondary /* Match teacher message color if needed */ }}>
-                      {allStudentsData.length === 0 && !selectedGradeId && !searchTerm ? "No hay estudiantes para mostrar." : "No se encontraron estudiantes que coincidan con los filtros."}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                displayedStudents.map((student) => {
-                  const isSelected = selectedStudentEmails.has(student.email);
-                  return (
-                    <TableRow
-                      key={student.id}
-                      onClick={() => handleToggleSelectStudent(student.email)}
-                      role="checkbox"
-                      aria-checked={isSelected}
-                      tabIndex={-1}
-                      selected={isSelected}
-                      sx={{
-                        cursor: 'pointer',
-                        backgroundColor: '#1A6487', // Base row color
+           
+      <TableContainer component={Paper} sx={{ maxHeight: 450, border: '1px solid #ddd', borderRadius: '10px' }}>
+        <Table stickyHeader size="small" aria-label="tutors table">
+          <TableHead>
+            <TableRow sx={{ '& th': { backgroundColor: '#228C3E', color: 'white' , borderBottom: 'none'} }}>
+              <TableCell padding="checkbox" sx={{ fontWeight: 'bold', borderTopLeftRadius: '10px', width: '1%' }}>{/* Checkbox for select all is now the button above */}</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Estudiantes</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Tutor</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', borderTopRightRadius: '10px' }}>Grado(s)</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {searchedTutors.map((tutor) => (
+                <TableRow 
+                  key={tutor.id} 
+                  selected={selectedTutorEmails.has(tutor.email)}
+                  onClick={() => handleToggleSelectTutor(tutor.email)}
+                  sx={{
+                      cursor: 'pointer',
+                      backgroundColor: '#1A6487',
+                      borderBottom: 'none',
+                      '& .MuiTableCell-root': {
+                        color: 'white',
                         borderBottom: 'none',
-                        '& .MuiTableCell-root': {
-                          color: 'white',
-                          borderBottom: 'none',
-                          padding: '6px 16px',
-                        },
+                        padding: '6px 16px',
+                      },
+                      '&:hover': {
+                        backgroundColor: '#3c90b4',
+                      },
+                      '&.Mui-selected': {
+                        backgroundColor: '#124A63',
                         '&:hover': {
-                          backgroundColor: '#3c90b4', // Lighter hover
+                          backgroundColor: '#104055',
                         },
-                        '&.Mui-selected': {
-                          backgroundColor: '#124A63', // Darker selected
-                          '&:hover': {
-                            backgroundColor: '#104055', // Darker selected hover
-                          },
+                      },
+                    }}
+                >
+                  <TableCell 
+                    padding="checkbox"
+                    sx={{ borderBottom: 'none !important' }}
+                  >
+                    <Checkbox 
+                      checked={selectedTutorEmails.has(tutor.email)} 
+                      onChange={(event) => {
+                        event.stopPropagation(); 
+                        handleToggleSelectTutor(tutor.email);
+                      }}
+                      onClick={(event) => event.stopPropagation()}
+                      sx={{ 
+                        color: 'white',
+                        '&.Mui-checked': {
+                          color: 'white',
                         },
                       }}
-                    >
-                      <TableCell padding="checkbox" sx={{ borderBottom: 'none !important' }}>
-                        <Checkbox
-                          size="small"
-                          checked={isSelected}
-                          inputProps={{ 'aria-labelledby': `student-checkbox-${student.id}` }}
-                          sx={{
-                            color: 'white',
-                            '&.Mui-checked': {
-                              color: 'white',
-                            },
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell component="th" id={`student-checkbox-${student.id}`} scope="row">
-                        {student.fullName}
-                      </TableCell>
-                      <TableCell>{student.email}</TableCell>
-                      <TableCell>{student.gradeName ? student.gradeName : 'N/A'}</TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
-      {displayedStudents.length > 0 && selectedStudentEmails.size > 0 && (
-        <Typography variant="caption" sx={{ mt: 0.5, color: theme.palette.text.secondary /* Or 'white' if preferred on dark bg */ }}>
-          Total seleccionado: {selectedStudentEmails.size} estudiante(s).
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {(tutor.studentsToDisplayInTable && tutor.studentsToDisplayInTable.length > 0)
+                      ? tutor.studentsToDisplayInTable.map(s => s.name).join(', ')
+                      : 'N/A'}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body1" component="div">{tutor.name}</Typography>
+                    <Typography variant="caption" display="block">{tutor.email}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    {selectedGradeId
+                      ? currentGradeName
+                      : (tutor.studentsToDisplayInTable && tutor.studentsToDisplayInTable.length > 0)
+                        ? [...new Set(tutor.studentsToDisplayInTable.map(s => s.gradeName))].join(', ')
+                        : 'N/A'}
+                  </TableCell>
+                </TableRow>
+            ))}
+            {searchedTutors.length === 0 && (
+              <TableRow sx={{ '& td': { backgroundColor: theme.palette.background.paper, color: theme.palette.text.primary } }}>
+                <TableCell colSpan={4} align="center">
+                  <Typography sx={{ fontStyle: 'italic', p: 2 }}>
+                    {allTutorsData.length === 0 && !loadingTutors ? 'No hay tutores registrados en el sistema.' :
+                     displayedTutors.length === 0 && selectedGradeId ? `No se encontraron tutores para el grado ${currentGradeName}.` :
+                     searchTerm ? `No se encontraron tutores que coincidan con "${searchTerm}".` :
+                     'No hay tutores para mostrar según el filtro actual.'}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      {selectedTutorEmails.size > 0 && (
+        <Typography variant="caption" sx={{ mt: 1, display: 'block', textAlign: 'left' }}>
+          Total seleccionado: {selectedTutorEmails.size} tutor(es).
         </Typography>
       )}
-
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 2, position: 'relative', width: '100%' }}>
         <Button
           variant="contained"
@@ -386,7 +402,7 @@ function GradeMails() {
             '&:hover': { backgroundColor: '#278552' }
           }}
           onClick={handleComposeMessage} // Updated onClick handler
-          disabled={selectedStudentEmails.size === 0} // Disable if no emails selected
+         /*  disabled={selectedTutorEmails.size === 0} */ // Disable if no emails selected
         >
           Componer mensaje
         </Button>

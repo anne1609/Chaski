@@ -40,13 +40,14 @@ const getEmailTutors = async (req, res) => {
           model: Grades,
           attributes: ['name']
         }],
-        attributes: ['id', 'names', 'last_names', 'email']
+        attributes: ['id', 'names', 'last_names', 'email', 'grade_id']
       });
 
       const students = studentsData.map(student => ({
         id: student.id,
         name: `${student.names} ${student.last_names}`,
         email: student.email,
+        grade_id: student.grade_id,
         gradeName: student.Grade ? student.Grade.name : 'Grado no asignado' // Include grade name
       }));
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -56,6 +56,18 @@ function Message() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
+  const [isSending, setIsSending] = useState(false);
+
+  // Efecto para establecer el tipo de mensaje por defecto basado en destinatarios
+  useEffect(() => {
+    if (selectedEmails.length === 0) {
+      // Si no hay destinatarios, establecer como "aviso" por defecto
+      setMessageType('aviso');
+    } else {
+      // Si hay destinatarios, establecer como "mensaje" por defecto
+      setMessageType('mensaje');
+    }
+  }, [selectedEmails.length]); // Se ejecuta cuando cambia el número de destinatarios
 
   const handleOpenModal = () => setOpenModal(true);
   const handleCloseModal = () => setOpenModal(false);
@@ -70,12 +82,316 @@ function Message() {
     }
   };
 
-  // Placeholder handlers for save and send
+  // Función para validar el formulario
+  const validateForm = () => {
+    console.log('Validando formulario:', {
+      messageType,
+      selectedEmails: selectedEmails.length,
+      subject: subject.trim(),
+      messageBody: messageBody.trim(),
+      selectedDate,
+      selectedTime
+    });
+
+    // Para avisos no se requieren destinatarios
+    if (messageType !== 'aviso' && selectedEmails.length === 0) {
+      console.log('Error: No hay destinatarios para mensaje/citación');
+      alert('Debe seleccionar al menos un destinatario para enviar mensajes y citaciones');
+      return false;
+    }
+    if (!subject.trim()) {
+      console.log('Error: Asunto vacío');
+      alert('El asunto es obligatorio');
+      return false;
+    }
+    if (!messageBody.trim()) {
+      console.log('Error: Mensaje vacío');
+      alert('El mensaje es obligatorio');
+      return false;
+    }
+    if (!messageType) {
+      console.log('Error: Tipo de mensaje no seleccionado');
+      alert('Debe seleccionar un tipo de mensaje');
+      return false;
+    }
+    if (messageType === 'citacion') {
+      if (!selectedDate) {
+        console.log('Error: Fecha vacía para citación');
+        alert('La fecha es obligatoria para citaciones');
+        return false;
+      }
+      if (!selectedTime) {
+        console.log('Error: Hora vacía para citación');
+        alert('La hora es obligatoria para citaciones');
+        return false;
+      }
+    }
+    console.log('Validación exitosa');
+    return true;
+  };
+
+  // Función para preparar los datos del formulario
+  const prepareFormData = () => {
+    const formData = new FormData();
+    
+    // Agregar cada campo individualmente para mejor compatibilidad
+    formData.append('selectedEmails', JSON.stringify(selectedEmails));
+    formData.append('messageType', messageType);
+    formData.append('subject', subject);
+    formData.append('messageBody', messageBody);
+    formData.append('selectedDate', selectedDate);
+    formData.append('selectedTime', selectedTime);
+    formData.append('confirmAttendance', confirmAttendance);
+    
+    // Agregar archivo si existe
+    if (selectedFile) {
+      formData.append('attachment', selectedFile);
+    }
+    
+    return formData;
+  };
+
+  // Handler para guardar (placeholder - puedes implementar guardado local o en BD)
   const handleSave = () => {
-    console.log('Guardar mensaje:', { recipientType, selectedEmails, messageType, subject, messageBody, confirmAttendance, selectedFile, selectedDate, selectedTime });
-     };
-  const handleSend = () => {
-    console.log('Enviar mensaje:', { recipientType, selectedEmails, messageType, subject, messageBody, confirmAttendance, selectedFile, selectedDate, selectedTime });
+    if (!validateForm()) return;
+    
+    const messageData = {
+      recipientType,
+      selectedEmails,
+      messageType,
+      subject,
+      messageBody,
+      confirmAttendance,
+      selectedFile: selectedFile ? selectedFile.name : null,
+      selectedDate,
+      selectedTime,
+      savedAt: new Date().toISOString()
+    };
+    
+    // Guardar en localStorage como draft
+    const drafts = JSON.parse(localStorage.getItem('emailDrafts') || '[]');
+    drafts.push(messageData);
+    localStorage.setItem('emailDrafts', JSON.stringify(drafts));
+    
+    alert('Mensaje guardado como borrador');
+    console.log('Mensaje guardado:', messageData);
+  };
+
+  // Función para generar e imprimir PDF (para avisos)
+  const handlePrint = () => {
+    if (!validateForm()) return;
+
+    // Verificar si el archivo adjunto es una imagen
+    const isImage = selectedFile && selectedFile.type.startsWith('image/');
+    let imageContent = '';
+    
+    if (isImage) {
+      // Crear URL temporal para la imagen
+      const imageURL = URL.createObjectURL(selectedFile);
+      imageContent = `
+        <div class="image-container">
+          <img src="${imageURL}" alt="Imagen adjunta" style="max-width: 100%; height: auto; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+        </div>
+      `;
+    }
+
+    // Crear contenido HTML para imprimir
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Aviso - Chaski App</title>
+        <style>
+          body { 
+            font-family: Arial, sans-serif; 
+            line-height: 1.6; 
+            color: #333; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px; 
+          }
+          .header { 
+            background-color: #0A3359; 
+            color: white; 
+            padding: 20px; 
+            text-align: center; 
+            margin-bottom: 20px;
+            border-radius: 8px;
+          }
+          .content { 
+            padding: 20px; 
+            background-color: #f9f9f9; 
+            border: 1px solid #ddd;
+            border-radius: 8px;
+          }
+          .subject-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0A3359;
+            margin-bottom: 20px;
+            text-align: center;
+            border-bottom: 2px solid #0A3359;
+            padding-bottom: 10px;
+          }
+          .message-content { 
+            font-size: 16px;
+            line-height: 1.8;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: white;
+            border-radius: 5px;
+            border-left: 4px solid #0A3359;
+          }
+          .image-container {
+            text-align: center;
+            margin: 20px 0;
+          }
+          .footer { 
+            margin-top: 30px; 
+            text-align: center; 
+            font-size: 12px; 
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+          }
+          @media print {
+            body { margin: 0; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>📢 AVISO</h1>
+        </div>
+        <div class="content">
+          <div class="subject-title">${subject}</div>
+          <div class="message-content">
+            ${messageBody.replace(/\n/g, '<br>')}
+          </div>
+          ${imageContent}
+        </div>
+        <div class="footer">
+          <p><strong>Fecha y hora de generación:</strong> ${new Date().toLocaleString()}</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Crear ventana para imprimir
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    // Si hay imagen, esperar a que se cargue antes de imprimir
+    if (isImage) {
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.focus();
+          printWindow.print();
+          printWindow.close();
+        }, 1000); // Dar tiempo para que la imagen se cargue
+      };
+    } else {
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    }
+
+    // No mostrar alert aquí, se manejará en handleSend
+  };
+
+  // Función para enviar emails en segundo plano
+  const sendEmailInBackground = async (formData) => {
+    try {
+      const response = await fetch('http://localhost:8080/api/send-email-queue', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        // Solo retornar el resultado, no mostrar alert aquí
+        return result;
+      } else {
+        throw new Error(result.error || 'Error al enviar los correos');
+      }
+    } catch (error) {
+      console.error('Error al enviar correos en segundo plano:', error);
+      throw error;
+    }
+  };
+
+  // Handler para enviar el email o imprimir según el tipo
+  const handleSend = async () => {
+    console.log('handleSend llamado con:', {
+      messageType,
+      selectedEmails: selectedEmails.length,
+      subject,
+      messageBody
+    });
+
+    if (!validateForm()) {
+      console.log('Validación falló, deteniendo envío');
+      return;
+    }
+
+    // Si es tipo aviso, imprimir en lugar de enviar
+    if (messageType === 'aviso') {
+      handlePrint();
+      // Mostrar mensaje de éxito para aviso y redirigir
+      setTimeout(() => {
+        alert('✅ Documento de aviso generado correctamente');
+        navigate('/secretary');
+      }, 500);
+      return;
+    }
+
+    // Para citación y mensaje, enviar por email
+    setIsSending(true);
+
+    try {
+      const formData = prepareFormData();
+      
+      console.log('Iniciando envío de mensaje:', {
+        recipientType,
+        selectedEmails,
+        messageType,
+        subject,
+        messageBody,
+        confirmAttendance,
+        selectedFile: selectedFile ? selectedFile.name : null,
+        selectedDate,
+        selectedTime
+      });
+
+      // Enviar emails
+      await sendEmailInBackground(formData);
+      
+      // Mostrar mensaje de éxito único y redirigir
+      alert(`✅ Correos enviados exitosamente!\n\nDestinatarios: ${selectedEmails.length}\nTipo: ${messageType}`);
+      
+      // Limpiar el formulario
+      setMessageType('');
+      setSubject('');
+      setMessageBody('');
+      setConfirmAttendance(false);
+      setSelectedFile(null);
+      setSelectedDate('');
+      setSelectedTime('');
+
+      // Redirigir a /secretary después de un breve delay
+      setTimeout(() => {
+        navigate('/secretary');
+      }, 1000);
+
+    } catch (error) {
+      console.error('Error al enviar:', error);
+      alert(`❌ Error al enviar correos: ${error.message}`);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -84,57 +400,61 @@ function Message() {
       <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
         Componer Mensaje
       </Typography>
-      <TableContainer component={Paper} sx={{ mb: 3, borderRadius: '8px', border: '1px solid #eee' }} elevation={0}>
-        <Table size="small" aria-label="message details table">
-          <TableHead>
-            <TableRow sx={{ '& th': { backgroundColor: '#228C3E', color: 'white', borderBottom: 'none' } }}>
-              <TableCell sx={{ fontWeight: 'bold' }}>Detalles</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Destinatarios</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Lista</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Nro de Destinatarios</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            <TableRow sx={{
-
-              backgroundColor: '#1A6487', // Base row color
-              borderBottom: 'none',
-              '& .MuiTableCell-root': {
-                color: 'white',
+      
+      {/* Tabla de destinatarios - Solo mostrar si no es tipo aviso */}
+      {messageType !== 'aviso' && (
+        <TableContainer component={Paper} sx={{ mb: 3, borderRadius: '8px', border: '1px solid #eee' }} elevation={0}>
+          <Table size="small" aria-label="message details table">
+            <TableHead>
+              <TableRow sx={{ '& th': { backgroundColor: '#228C3E', color: 'white', borderBottom: 'none' } }}>
+                <TableCell sx={{ fontWeight: 'bold' }}>Detalles</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Destinatarios</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Lista</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Nro de Destinatarios</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              <TableRow sx={{
+                backgroundColor: '#1A6487', // Base row color
                 borderBottom: 'none',
-                padding: '6px 16px',
-              },
-
-
-            }}>
-              <TableCell component="th" scope="row">
-                {/* Can be used for a message title or ID later */}
-              </TableCell>
-              <TableCell>{recipientType}</TableCell>
-              <TableCell>
-                <Button size="small" onClick={handleOpenModal} disabled={selectedEmails.length === 0} sx={{
-                  paddingInline: 5,
-                  whiteSpace: 'nowrap',
-                  // Responsive border radius
-
-                  zIndex: 1, // To ensure it overlaps correctly with TextField border on md
-                  height: 'auto', // Allow button to size height based on content + padding
-                  width: { xs: '100%', md: 'auto' }, // Full width on xs, auto on md
-                  backgroundColor: '#0A3359',
+                '& .MuiTableCell-root': {
                   color: 'white',
-                  '&:hover': {
+                  borderBottom: 'none',
+                  padding: '6px 16px',
+                },
+              }}>
+                <TableCell component="th" scope="row">
+                  {/* Can be used for a message title or ID later */}
+                </TableCell>
+                <TableCell>{recipientType}</TableCell>
+                <TableCell>
+                  <Button size="small" onClick={handleOpenModal} disabled={messageType !== 'aviso' && selectedEmails.length === 0} sx={{
+                    paddingInline: 5,
+                    whiteSpace: 'nowrap',
+                    zIndex: 1,
+                    height: 'auto',
+                    width: { xs: '100%', md: 'auto' },
                     backgroundColor: '#0A3359',
-                  },
-                  borderRadius: '8px', // Ensure consistent border radius
-                }}>
-                  Ver lista
-                </Button>
-              </TableCell>
-              <TableCell>{selectedEmails.length}</TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </TableContainer>
+                    color: 'white',
+                    '&:hover': {
+                      backgroundColor: '#0A3359',
+                    },
+                    borderRadius: '8px',
+                  }}>
+                    Ver lista
+                  </Button>
+                </TableCell>
+                <TableCell>
+                  {messageType === 'aviso' 
+                    ? 'N/A (No requerido)' 
+                    : selectedEmails.length
+                  }
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
 
       {/* Modal for selected emails */}
       <Modal
@@ -200,8 +520,8 @@ function Message() {
               Selecciona un tipo
             </MenuItem>
             <MenuItem value="citacion">Citación</MenuItem>
-            <MenuItem value="aviso">Tipo Aviso</MenuItem>
-            <MenuItem value="mensaje">Tipo Mensaje</MenuItem>
+            <MenuItem value="aviso"> Aviso</MenuItem>
+            <MenuItem value="mensaje"> Mensaje</MenuItem>
           </Select>
         </FormControl>
         <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, justifyContent: 'flex-end' }}> {/* Added justifyContent: 'flex-end' */}
@@ -415,14 +735,26 @@ function Message() {
             <Button
               variant="contained"
               onClick={handleSend}
+              disabled={isSending}
               sx={{
-                backgroundColor: '#2C965A',
+                backgroundColor: messageType === 'aviso' ? '#FF6B35' : '#2C965A',
                 color: 'white',
-                '&:hover': { backgroundColor: '#278552' }
+                '&:hover': { 
+                  backgroundColor: messageType === 'aviso' ? '#E55A2B' : '#278552' 
+                },
+                '&:disabled': {
+                  backgroundColor: '#ccc',
+                  color: '#666'
+                }
               }}
               fullWidth
             >
-              Enviar
+              {isSending 
+                ? 'Enviando...' 
+                : messageType === 'aviso' 
+                  ? 'Imprimir' 
+                  : 'Enviar'
+              }
             </Button>
           </Grid>
           <Grid item>
