@@ -46,7 +46,8 @@ function Message() {
   const navigate = useNavigate();
   const theme = useTheme();
 
-  const { selectedEmails = [], recipientType = 'Desconocido' } = location.state || {};
+  const { selectedEmails = [], selectedIds = [], recipientType = 'Desconocido' } = location.state || {};
+  
 
   const [openModal, setOpenModal] = useState(false);
   const [messageType, setMessageType] = useState(''); // Default to empty string
@@ -76,10 +77,13 @@ function Message() {
   };
   
   const handleSave = async () => {
-    console.log('Guardar mensaje:', { recipientType, selectedEmails, messageType, subject, messageBody, confirmAttendance,  priority, selectedFile, selectedDate, selectedTime });
-    const hasStudents = recipientType.toLowerCase().includes('Estudiantes');
-    const hasTutors = recipientType.toLowerCase().includes('Tutores');
-    const hasTeachers = recipientType.toLowerCase().includes('Profesores');
+    console.log('Guardar mensaje:', { recipientType, selectedEmails, selectedIds, messageType, subject, messageBody, confirmAttendance,  priority, selectedFile, selectedDate, selectedTime });
+    const hasStudents = recipientType.toLowerCase().includes('estudiantes');
+    console.log('Has students:', hasStudents);
+    const hasTutors = recipientType.toLowerCase().includes('tutores');
+    console.log('Has tutors:', hasTutors);
+    const hasTeachers = recipientType.toLowerCase().includes('profesores');
+    console.log('Has teachers:', hasTeachers);
     const payload = {
     category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
     secretary_id: 1,
@@ -91,40 +95,61 @@ function Message() {
     };
 
     try {
-      let url = 'http://localhost:8080/api/communication';
-      let bodyToSend = payload;
-
-      if (hasStudents) {
-        url = 'http://localhost:8080/api/students-communications';
-        bodyToSend = {
-          ...payload,
-          students: selectedEmails,
-        };
-      } else if (hasTutors) {
-        url = 'http://localhost:8080/api/tutors-communications';
-        bodyToSend = {
-          ...payload,
-          tutors: selectedEmails,
-        };
-      } else if (hasTeachers) {
-        url = 'http://localhost:8080/api/teachers-communications';
-        bodyToSend = {
-          ...payload,
-          teachers: selectedEmails,
-        };
-      }
-      const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(bodyToSend),
+      const response = await fetch('http://localhost:8080/api/communication', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
-
       if (!response.ok) throw new Error('Error al guardar el mensaje');
-      alert('Mensaje guardado correctamente');
-      navigate(-1);
-    } catch (error) {
-    console.error('Error al guardar el mensaje:', error);
-    alert('Error al guardar el mensaje: ' + error.message);
+      const savedMessage = await response.json();
+      const communicationId = savedMessage.id;
+      console.log('Mensaje guardado:', savedMessage);
+      if (hasStudents && selectedIds && selectedIds.length > 0 && communicationId) {
+        for (const studentId of selectedIds) {
+          console.log('Guardando comunicación del estudiante:', { studentId, communicationId });
+          const studentCommRes = await fetch('http://localhost:8080/api/students-communications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              student_id: studentId,
+              communication_id: communicationId,
+            }),
+          });
+          if (!studentCommRes.ok) throw new Error('Error al guardar la comunicación del estudiante');
+        }
+      } 
+      if (hasTutors && selectedIds && selectedIds.length > 0 && communicationId) {
+        for (const tutorId of selectedIds) {
+          console.log('Guardando comunicación del tutor:', { tutorId, communicationId });
+          const tutorCommRes = await fetch('http://localhost:8080/api/tutors-communications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },          
+          body: JSON.stringify({
+            tutor_id: tutorId,
+            communication_id: communicationId,
+          }),
+        });
+        if (!tutorCommRes.ok) throw new Error('Error al guardar la comunicación del tutor');
+        }
+      } 
+      if (hasTeachers && selectedIds && selectedIds.length > 0 && communicationId) {
+        for (const teacherId of selectedIds) {
+          console.log('Guardando comunicación del profesor:', { teacherId, communicationId });
+          const teacherCommRes = await fetch('http://localhost:8080/api/teachers-communications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              teacher_id: teacherId,
+              communication_id: communicationId,
+            }),
+          });
+          if (!teacherCommRes.ok) throw new Error('Error al guardar la comunicación del profesor');
+        }
+      }
+      alert('Mensaje guardado exitosamente');
+      navigate("/secretary");
+    }catch (error) {
+      console.error('Error al guardar el mensaje:', error);
     }
   }
 

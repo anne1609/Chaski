@@ -153,11 +153,13 @@ function TutorsMails() {
       setSelectedTutorEmails(new Set(searchedTutors.map(t => t.email)));
     }
   }, [searchedTutors, allSearchedSelected]);
-
+  const selectedTutors = allTutorsData.filter(tutor => selectedTutorEmails.has(tutor.email));
+  const selectedTutorIds = selectedTutors.map(tutor => tutor.id);
   const handleComposeMessage = () => {
     navigate('/secretary/compose-message', {
       state: {
         selectedEmails: Array.from(selectedTutorEmails),
+        selectedIds: selectedTutorIds,
         recipientType: 'Tutores',
       }
     });

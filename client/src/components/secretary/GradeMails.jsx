@@ -127,11 +127,13 @@ function GradeMails() {
       setSelectedStudentEmails(new Set());
     }
   }, [displayedStudents]);
-
+  const selectedStudents = allStudentsData.filter(student => selectedStudentEmails.has(student.email));
+  const selectedStudentsIds = selectedStudents.map(student => student.id);
   const handleComposeMessage = () => {
     navigate('/secretary/compose-message', {
       state: {
         selectedEmails: Array.from(selectedStudentEmails),
+        selectedIds: selectedStudentsIds,
         recipientType: 'Estudiantes',
       }
     });
