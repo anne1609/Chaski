@@ -415,7 +415,7 @@ function TeachersMails() {
             '&:hover': { backgroundColor: '#278552' }
           }}
           onClick={handleComposeMessage} // Updated onClick handler
-          disabled={selectedEmails.size === 0} // Disable if no emails selected
+         /*  disabled={selectedEmails.size === 0}  */// Disable if no emails selected
         >
           Componer mensaje
         </Button>

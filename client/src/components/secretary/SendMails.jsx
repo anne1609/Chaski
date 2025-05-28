@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Box, Button, Typography } from '@mui/material';
 import TeachersMails from './TeachersMails';
+import StudentMails from './StudentMails';
 import GradeMails from './GradeMails';
-import TutorsMails from './TutorsMails';
 import SubjectMails from './SubjectMails';
 
 function SendMails() {
@@ -26,9 +26,9 @@ function SendMails() {
       case 'profesores':
         return <TeachersMails />;
       case 'estudiantes':
-        return <GradeMails />;
+        return <StudentMails />;
       case 'cursos':
-        return <TutorsMails />;
+        return <GradeMails />;
       default:
         return <Typography>Seleccione una opción</Typography>;
     }
