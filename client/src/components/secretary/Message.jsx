@@ -153,32 +153,6 @@ function Message() {
     return formData;
   };
 
-  // Handler para guardar (placeholder - puedes implementar guardado local o en BD)
-  const handleSave = () => {
-    if (!validateForm()) return;
-    
-    const messageData = {
-      recipientType,
-      selectedEmails,
-      messageType,
-      subject,
-      messageBody,
-      confirmAttendance,
-      selectedFile: selectedFile ? selectedFile.name : null,
-      selectedDate,
-      selectedTime,
-      savedAt: new Date().toISOString()
-    };
-    
-    // Guardar en localStorage como draft
-    const drafts = JSON.parse(localStorage.getItem('emailDrafts') || '[]');
-    drafts.push(messageData);
-    localStorage.setItem('emailDrafts', JSON.stringify(drafts));
-    
-    alert('Mensaje guardado como borrador');
-    console.log('Mensaje guardado:', messageData);
-  };
-
   // Función para generar e imprimir PDF (para avisos)
   const handlePrint = () => {
     if (!validateForm()) return;

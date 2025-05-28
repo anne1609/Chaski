@@ -127,11 +127,13 @@ function StudentMails() {
       setSelectedStudentEmails(new Set());
     }
   }, [displayedStudents]);
-
+  const selectedStudens = allStudentsData.filter(student => selectedStudentEmails.has(student.email));
+  const selectedStudentsIds = selectedStudens.map(student => student.id);
   const handleComposeMessage = () => {
     navigate('/secretary/compose-message', {
       state: {
         selectedEmails: Array.from(selectedStudentEmails),
+        selectedIds: selectedStudentsIds,
         recipientType: 'Estudiantes',
       }
     });
