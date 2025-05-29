@@ -3,14 +3,17 @@ import './App.css';
 import AppRoutes from './router/index';
 import NavBar from './components/NavBar';
 import { ThemeProvider } from '@mui/material/styles';
+import { AuthProvider } from './contexts/AuthContext';
 import theme from './theme';
-function App() {
 
+function App() {
   return (
     <ThemeProvider theme={theme}>
-      <NavBar />
-      <Outlet />
-      <AppRoutes />
+      <AuthProvider>
+        <NavBar />
+        <Outlet />
+        <AppRoutes />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

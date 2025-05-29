@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   AppBar,
   Toolbar,
@@ -15,7 +15,14 @@ import {
   useTheme,
   useMediaQuery,
 } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
+import { useAuth } from '../hooks/useAuth';
+
+// Lightweight Unicode icons for better performance
+const Icons = {
+  Menu: '☰',
+  Logout: '🚪',
+  Person: '👤'
+};
 
 function NavBar() {
   const location = useLocation();
@@ -23,14 +30,31 @@ function NavBar() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
 
-  const navConfig = {
-    '/': { to: '/login', text: 'Login' },
-    '/secretary': { to: '/login', text: 'Cerrar Sesion' },
-    '/teacher': { to: '/login', text: 'Cerrar Sesion' },
+  // Don't show navbar on login page
+  if (pathname === '/login') {
+    return null;
+  }
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
-  const currentNav = navConfig[pathname];
+  const getNavConfig = () => {
+    if (!isAuthenticated) {
+      return null;
+    }
+    
+    return {
+      text: user ? `${user.names} ${user.last_names}` : 'Usuario',
+      role: user?.role === 'secretary' ? 'Secretaria' : 'Profesor'
+    };
+  };
+
+  const currentNav = getNavConfig();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -40,11 +64,25 @@ function NavBar() {
     { to: '/secretary/messages', text: 'Lista de mensajes' },
     { to: '/secretary/notice', text: 'Crear Aviso' },
     { to: '/secretary/mails', text: 'Enviar Correos' },
-  ];
-
-  const drawer = (
+  ];  const drawer = (
     <Box sx={{ width: 240 }}>
       <List>
+        {/* User Info */}
+        {currentNav && (
+          <ListItem>
+            <Box sx={{ width: '100%', textAlign: 'center', color: 'white', mb: 2 }}>
+              <span style={{ fontSize: '40px', marginBottom: '8px', display: 'block' }}>{Icons.Person}</span>
+              <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                {currentNav.text}
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                {currentNav.role}
+              </Typography>
+            </Box>
+          </ListItem>
+        )}
+        
+        {/* Menu Items */}
         {pathname === '/secretary' && secretaryMenuItems.map((item) => (
           <ListItem key={item.to} disablePadding>
             <ListItemButton 
@@ -74,31 +112,35 @@ function NavBar() {
             </ListItemButton>
           </ListItem>
         ))}
-        {currentNav && (
+        
+        {/* Logout Button */}
+        {isAuthenticated && (
           <ListItem disablePadding>
             <ListItemButton 
-              component={Link} 
-              to={currentNav.to}
-              onClick={handleDrawerToggle}
+              onClick={() => {
+                handleLogout();
+                handleDrawerToggle();
+              }}
               sx={{
-                backgroundColor: '#1A6487',
+                backgroundColor: '#d32f2f',
                 color: 'white',
                 margin: 0.5,
                 borderRadius: '8px',
                 padding: '8px 12px',
                 '&:hover': {
-                  backgroundColor: '#144f6b',
+                  backgroundColor: '#b71c1c',
                 },
               }}
             >
+              <span style={{ marginRight: '8px', fontSize: '16px' }}>{Icons.Logout}</span>
               <ListItemText 
-                primary={currentNav.text} 
+                primary="Cerrar Sesión" 
                 sx={{ 
                   textAlign: 'center',
                   '& .MuiListItemText-primary': {
                     fontSize: '14px'
                   }
-                }} 
+                }}
               />
             </ListItemButton>
           </ListItem>
@@ -136,7 +178,7 @@ function NavBar() {
               edge="start"
               onClick={handleDrawerToggle}
             >
-              <MenuIcon />
+              <span style={{ fontSize: '20px' }}>{Icons.Menu}</span>
             </IconButton>
           ) : (
             <>
@@ -166,24 +208,34 @@ function NavBar() {
               </Box>
 
               {/* Desktop Navigation - Right */}
-              <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 {currentNav && (
-                  <Button
-                    component={Link}
-                    to={currentNav.to}
-                    sx={{
-                      color: 'white',
-                      fontSize: '14px',
-                      borderRadius: '8px',
-                      backgroundColor: '#1A6487',
-                      padding: '6px 16px',
-                      '&:hover': {
-                        backgroundColor: '#144f6b',
-                      },
-                    }}
-                  >
-                    {currentNav.text}
-                  </Button>
+                  <>
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography variant="body2" sx={{ color: 'white', fontSize: '12px' }}>
+                        {currentNav.role}
+                      </Typography>
+                      <Typography variant="body1" sx={{ color: 'white', fontSize: '14px' }}>
+                        {currentNav.text}
+                      </Typography>
+                    </Box>
+                    <Button
+                      onClick={handleLogout}
+                      sx={{
+                        color: 'white',
+                        fontSize: '14px',
+                        borderRadius: '8px',
+                        backgroundColor: '#d32f2f',
+                        padding: '6px 16px',
+                        '&:hover': {
+                          backgroundColor: '#b71c1c',
+                        },
+                      }}
+                    >
+                      <span style={{ marginRight: '8px', fontSize: '16px' }}>{Icons.Logout}</span>
+                      Cerrar Sesión
+                    </Button>
+                  </>
                 )}
               </Box>
             </>

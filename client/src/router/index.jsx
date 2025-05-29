@@ -1,20 +1,50 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 
 import Login from '../components/Login';
 import Secretary from '../components/secretary/Secretary';
 import Teacher from '../components/teacher/Teacher';
 import SendMails from '../components/secretary/SendMails';
-import Message from '../components/secretary/Message'; // Import the Message component
+import Message from '../components/secretary/Message';
+import ProtectedRoute from '../components/ProtectedRoute';
 
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="login" element={<Login />} />
-      <Route path="secretary" element={<Secretary />} />
-      <Route path="teacher" element={<Teacher />} />
-      <Route path="secretary/mails" element={<SendMails />} />
-      <Route path="secretary/compose-message" element={<Message />} /> {/* Add route for Message component */}
+      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/login" element={<Login />} />
+      <Route 
+        path="/secretary" 
+        element={
+          <ProtectedRoute requiredRole="secretary">
+            <Secretary />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/teacher" 
+        element={
+          <ProtectedRoute requiredRole="teacher">
+            <Teacher />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/secretary/mails" 
+        element={
+          <ProtectedRoute requiredRole="secretary">
+            <SendMails />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/secretary/compose-message" 
+        element={
+          <ProtectedRoute requiredRole="secretary">
+            <Message />
+          </ProtectedRoute>
+        } 
+      />
     </Routes>
   );
 }
