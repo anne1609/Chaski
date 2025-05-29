@@ -1,13 +1,21 @@
 
+import { textFieldClasses } from '@mui/material';
 import { createTheme } from '@mui/material/styles';
 
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#0D6EFD', 
+      main: '#1A6487', 
     },
     secondary: {
-      main: '#dc004e',
+      main: '#0A3359',
+    },
+    tertiary: {
+      main: '#2C965A', 
+    },
+    negative: {
+      main: '#011408',
+      contrastText: '#FFFFFF',
     },
   },
   typography: {

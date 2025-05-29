@@ -46,13 +46,15 @@ function Message() {
   const navigate = useNavigate();
   const theme = useTheme();
 
-  const { selectedEmails = [], recipientType = 'Desconocido' } = location.state || {};
+  const { selectedEmails = [], selectedIds = [], recipientType = 'Desconocido' } = location.state || {};
+  
 
   const [openModal, setOpenModal] = useState(false);
   const [messageType, setMessageType] = useState(''); // Default to empty string
   const [subject, setSubject] = useState('');
   const [messageBody, setMessageBody] = useState('');
   const [confirmAttendance, setConfirmAttendance] = useState(false);
+  const [priority, setPriority] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -149,32 +151,6 @@ function Message() {
     }
     
     return formData;
-  };
-
-  // Handler para guardar (placeholder - puedes implementar guardado local o en BD)
-  const handleSave = () => {
-    if (!validateForm()) return;
-    
-    const messageData = {
-      recipientType,
-      selectedEmails,
-      messageType,
-      subject,
-      messageBody,
-      confirmAttendance,
-      selectedFile: selectedFile ? selectedFile.name : null,
-      selectedDate,
-      selectedTime,
-      savedAt: new Date().toISOString()
-    };
-    
-    // Guardar en localStorage como draft
-    const drafts = JSON.parse(localStorage.getItem('emailDrafts') || '[]');
-    drafts.push(messageData);
-    localStorage.setItem('emailDrafts', JSON.stringify(drafts));
-    
-    alert('Mensaje guardado como borrador');
-    console.log('Mensaje guardado:', messageData);
   };
 
   // Función para generar e imprimir PDF (para avisos)
@@ -393,6 +369,83 @@ function Message() {
       setIsSending(false);
     }
   };
+  
+  const handleSave = async () => {
+    console.log('Guardar mensaje:', { recipientType, selectedEmails, selectedIds, messageType, subject, messageBody, confirmAttendance,  priority, selectedFile, selectedDate, selectedTime });
+    const hasStudents = recipientType.toLowerCase().includes('estudiantes');
+    console.log('Has students:', hasStudents);
+    const hasTutors = recipientType.toLowerCase().includes('tutores');
+    console.log('Has tutors:', hasTutors);
+    const hasTeachers = recipientType.toLowerCase().includes('profesores');
+    console.log('Has teachers:', hasTeachers);
+    const payload = {
+    category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
+    secretary_id: 1,
+    teacher_id: null,
+    subject,
+    body: messageBody,
+    status: 'Guardado',
+    priority: priority || 1,
+    };
+
+    try {
+      const response = await fetch('http://localhost:8080/api/communication', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error('Error al guardar el mensaje');
+      const savedMessage = await response.json();
+      const communicationId = savedMessage.id;
+      console.log('Mensaje guardado:', savedMessage);
+      if (hasStudents && selectedIds && selectedIds.length > 0 && communicationId) {
+        for (const studentId of selectedIds) {
+          console.log('Guardando comunicación del estudiante:', { studentId, communicationId });
+          const studentCommRes = await fetch('http://localhost:8080/api/students-communications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              student_id: studentId,
+              communication_id: communicationId,
+            }),
+          });
+          if (!studentCommRes.ok) throw new Error('Error al guardar la comunicación del estudiante');
+        }
+      } 
+      if (hasTutors && selectedIds && selectedIds.length > 0 && communicationId) {
+        for (const tutorId of selectedIds) {
+          console.log('Guardando comunicación del tutor:', { tutorId, communicationId });
+          const tutorCommRes = await fetch('http://localhost:8080/api/tutors-communications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },          
+          body: JSON.stringify({
+            tutor_id: tutorId,
+            communication_id: communicationId,
+          }),
+        });
+        if (!tutorCommRes.ok) throw new Error('Error al guardar la comunicación del tutor');
+        }
+      } 
+      if (hasTeachers && selectedIds && selectedIds.length > 0 && communicationId) {
+        for (const teacherId of selectedIds) {
+          console.log('Guardando comunicación del profesor:', { teacherId, communicationId });
+          const teacherCommRes = await fetch('http://localhost:8080/api/teachers-communications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              teacher_id: teacherId,
+              communication_id: communicationId,
+            }),
+          });
+          if (!teacherCommRes.ok) throw new Error('Error al guardar la comunicación del profesor');
+        }
+      }
+      alert('Mensaje guardado exitosamente');
+      navigate("/secretary");
+    }catch (error) {
+      console.error('Error al guardar el mensaje:', error);
+    }
+  }
 
   return (
     <Paper sx={{ p: 3, m: 2, borderRadius: '8px' }}>
@@ -621,7 +674,7 @@ function Message() {
 
       </Grid>
       {/* Row for Subject Input - NOW SECOND, in its own full-width box */}
-      <Grid item xs={12} sx={{ mb: 2 }}>
+      <Grid item xs={12} sx={{ mb: 2, display: 'flex', flexDirection: 'row', gap: 1, width: '100%', justifyContent: 'space-between' }}>
         <Box >
           <TextField
             //   label="Asunto"
@@ -637,8 +690,9 @@ function Message() {
                 // borderTopRightRadius: { xs: theme.shape.borderRadius, md: 0 }, // Removed for consistency
                 // borderBottomRightRadius: { xs: theme.shape.borderRadius, md: 0 }, // Removed for consistency
                 borderRadius: '4px', // Apply consistent border radius
-                backgroundColor: '#1A6487', // Changed from #0A3359
-                color: 'white',
+                backgroundColor: '#1A6487', // Changed from #0A3359                
+                minWidth: '70vw', // Ensure full width
+                color: 'white',                
                 '& .MuiOutlinedInput-notchedOutline': {
                   borderColor: 'rgba(255, 255, 255, 0.5)',
                   // borderRightWidth: { xs: 1, md: 0 }, // Removed for consistency
@@ -657,6 +711,43 @@ function Message() {
               }
             }}
             InputLabelProps={{ // This might not be needed if using placeholder
+              sx: {
+                color: 'rgba(255, 255, 255, 0.7)',
+                '&.Mui-focused': {
+                  color: 'white',
+                }
+              }
+            }}
+          />
+        </Box>
+        <Box>
+          <TextField
+            fullWidth
+            placeholder='Prioridad'
+            size="small"
+            value={priority}
+            onChange={(e) => setPriority(e.target.value)}
+            InputProps={{
+              sx: {
+                borderRadius: '4px',
+                backgroundColor: '#1A6487',                
+                color: 'white',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(255, 255, 255, 0.5)',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'white',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'white',
+                },
+                '& input::placeholder': { // Style placeholder
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  opacity: 1, // Ensure placeholder is visible
+                },
+              }
+            }}
+            InputLabelProps={{
               sx: {
                 color: 'rgba(255, 255, 255, 0.7)',
                 '&.Mui-focused': {

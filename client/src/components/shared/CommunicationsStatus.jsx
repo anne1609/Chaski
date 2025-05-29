@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Box, Button } from '@mui/material';
+import { Link, useLocation } from 'react-router-dom';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Box, Button, Tab } from '@mui/material';
 
 function CommunicationsStatus({ role }) {
   const [communications, setCommunications] = useState([]);
@@ -74,39 +75,98 @@ function CommunicationsStatus({ role }) {
       {communications.length === 0 ? (
         <div>No hay comunicaciones disponibles.</div>
       ) : (
-        <TableContainer component={Paper}>
+        <TableContainer component={Paper} sx={{ maxHeight: '64vh' }}>
           <Table>
-            <TableHead>
+            <TableHead
+              sx={{
+                backgroundColor: 'tertiary.main',
+                color: '#FFFFFF',
+                '& th': {
+                  color: '#FFFFFF',
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                },
+              }}
+            >
               <TableRow>
-                <TableCell>Remitente</TableCell>
+                <TableCell>Asunto</TableCell>
                 <TableCell>prioridad</TableCell>
-                <TableCell>Categoria</TableCell>
+                <TableCell>Tipo de Mensaje</TableCell>
                 <TableCell>Mensaje</TableCell>
+                <TableCell>Estado</TableCell>
                 <TableCell>Acciones</TableCell>
               </TableRow>
             </TableHead>
-            <TableBody>
+            <TableBody
+              sx={{
+                backgroundColor: 'primary.main',
+                '& td': {
+                  color: '#ffffff',
+                  fontSize: '16px',
+                  fontWeight: 'normal',                   
+                  border: '1px solid #ccc',                                   
+                },
+              }}
+            >
               {communications
-              .filter((communication) => communication.status === 'Guardado')
+              .filter((communication) => communication.status === 'Guardado' || communication.status === 'Enviado')
               .map((communication) => (
                 <TableRow key={communication.id}>
                   <TableCell>{communication.subject}</TableCell>
                   <TableCell>{communication.priority}</TableCell>
                   <TableCell>{communication.category.name}</TableCell>
-                  <TableCell>{communication.body}</TableCell>
-                  <TableCell>
+                  <TableCell
+                    sx={{
+                      maxWidth: '250px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >{communication.body}</TableCell>
+                  <TableCell>{communication.status}</TableCell>
+                  <TableCell
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >                      
+                    {communication.status !== 'Enviado' && communication.status !== 'Archivado' && (  
+                     <Button
+                        variant="contained"
+                        color="secondary"
+                        component={Link}
+                        to={`/secretary/edit/${communication.id}`}
+                        sx={{ mr: 1 }}                    
+                      >
+                        Seguir Editando
+                      </Button>
+                    )}   
+                    {communication.status !== 'Guardado' && communication.status !== 'Archivado' && (  
+                     <Button
+                        variant="contained"
+                        color="secondary"
+                        component={Link}
+                        onClick={() => handleStatusChange(communication.id, 'Enviado')}
+                        sx={{ mr: 1 }}                    
+                      >
+                        Reenviar
+                      </Button>
+                    )}   
                     <Button
                       variant="contained"
-                      color="primary"
-                      onClick={() => handleStatusChange(communication.id, 'Guardado')}
-                      sx={{ mr: 1 }}
+                      color="tertiary"
+                      component={Link}
+                      to={`/secretary/communication/${communication.id}`}
+                      sx={{ mr: 1 }}                    
                     >
-                      Seguir Editando
-                    </Button>
+                      Detalles
+                    </Button>                 
                     <Button
                       variant="contained"
-                      color="secondary"
+                      color="negative"
                       onClick={() => handleStatusChange(communication.id, 'Archivado')}
+                      sx={{ mr: 1 }}
                     >
                       Archivar
                     </Button>

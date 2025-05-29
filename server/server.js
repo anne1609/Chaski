@@ -13,6 +13,8 @@ const categoryRoutes = require("./routes/categoryRoutes.js");
 const secretaryRoutes = require("./routes/secretaryRoutes.js");
 const studentRoutes = require("./routes/studentRoutes.js");
 const teacherCommunicationRoutes = require("./routes/teacherCommunicationRoutes.js");
+const tutorCommunicationRoutes = require("./routes/tutorCommunicationRoutes.js");
+const studentCommunicationRoutes = require("./routes/studentCommunicationRoutes.js");
 const authRoutes = require("./routes/authRoutes.js");
 
 const app = express();
@@ -34,6 +36,8 @@ app.use("/api", categoryRoutes);
 app.use("/api", secretaryRoutes);
 app.use("/api", studentRoutes);
 app.use("/api", teacherCommunicationRoutes);
+app.use("/api", tutorCommunicationRoutes);
+app.use("/api", studentCommunicationRoutes);
 app.use("/api/auth", authRoutes);
 
 

@@ -7,6 +7,6 @@ router.get('/teachers-communications/:teacher_id/:communication_id', teacherComm
 router.post('/teachers-communications', teacherCommunicationController.createTeacherCommunication);
 router.put('/teachers-communications/:teacher_id/:communication_id', teacherCommunicationController.updateTeacherCommunication);
 router.delete('/teachers-communications/:teacher_id/:communication_id', teacherCommunicationController.deleteTeacherCommunication);
-router.get('/confirm-attendance', teacherCommunicationController.confirmAttendance);
+router.get('/confirm-attendance-teachers', teacherCommunicationController.confirmAttendance);
 
 module.exports = router;

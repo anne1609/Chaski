@@ -28,15 +28,7 @@ function Secretary() {
         {showForm ? 'Ocultar Formulario' : 'Enviar Correo'}
       </Button>
       {showForm && <EmailForm role="secretary" />}
-      <Button
-        variant="contained"
-        color="secondary"
-        onClick={handleToggleStatus}
-        sx={{ mt: 2, ml: 2 }}
-      >
-        {showStatus ? 'Ocultar Estado' : 'Mostrar Estado'}
-      </Button>
-      {showStatus && <CommunicationsStatus />}
+      <CommunicationsStatus />
     </Box>
   );
 }
