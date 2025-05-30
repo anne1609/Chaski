@@ -18,6 +18,10 @@ const generateEmailContent = (messageType, data) => {
   `;
 
   if (messageType === 'citacion') {
+    const teacher_id = 1;
+    const communication_id = 2;
+    const confirmUrl = `http://localhost:5173/confirmation-accepted?communication_id=${communication_id}&teacher_id=${teacher_id}&confirmed=1`;
+    const rejectUrl = `http://localhost:5173/confirmation-rejected?communication_id=${communication_id}&teacher_id=${teacher_id}&confirmed=0`;
     return `
       ${baseStyle}
       <div class="header">
@@ -36,6 +40,8 @@ const generateEmailContent = (messageType, data) => {
           <p>${messageBody.replace(/\n/g, '<br>')}</p>
         </div>
         ${confirmAttendance ? '<p><strong>⚠️ Se requiere confirmación de asistencia.</strong></p>' : ''}
+        <a href="${confirmUrl}" style="padding:10px 20px;background:#4caf50;color:white;text-decoration:none;border-radius:5px;">Sí, confirmo asistencia</a>
+        <a href="${rejectUrl}" style="padding:10px 20px;background:#f44336;color:white;text-decoration:none;border-radius:5px;margin-left:10px;">No, no podré asistir</a>
       </div>
       <div class="footer">
         <p>Este es un mensaje automático del sistema Chaski App</p>
@@ -48,7 +54,7 @@ const generateEmailContent = (messageType, data) => {
       <div class="header">
         <h2>📢 AVISO IMPORTANTE - Chaski App</h2>
       </div>
-      <div class="content">
+      <div class="content"> 
         <h3>${subject}</h3>
         <div class="notice-info">
           <h4>📋 Información del Aviso:</h4>
