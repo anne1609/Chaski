@@ -60,11 +60,23 @@ function NavBar() {
     setMobileOpen(!mobileOpen);
   };
 
+  const teacherMenuItems = [
+    { to: '/teacher', text: 'Mi Buzón' },
+    { to: '/teacher/messages', text: 'Mis Mensajes' },
+    { to: '/teacher/notice', text: 'Crear Aviso' },
+    { to: '/teacher/mails', text: 'Enviar Correos' },
+  ];
   const secretaryMenuItems = [
-    { to: '/secretary/messages', text: 'Lista de mensajes' },
+    { to: '/secretary', text: 'Lista de mensajes' },
     { to: '/secretary/notice', text: 'Crear Aviso' },
     { to: '/secretary/mails', text: 'Enviar Correos' },
-  ];  const drawer = (
+  ];  
+  const getMenuItems = () => {
+    if (pathname.startsWith('/secretary')) return secretaryMenuItems;
+    if (pathname.startsWith('/teacher')) return teacherMenuItems;
+    return [];
+  };
+  const drawer = (
     <Box sx={{ width: 240 }}>
       <List>
         {/* User Info */}
@@ -83,7 +95,7 @@ function NavBar() {
         )}
         
         {/* Menu Items */}
-        {pathname === '/secretary' && secretaryMenuItems.map((item) => (
+        {getMenuItems().map((item) => (
           <ListItem key={item.to} disablePadding>
             <ListItemButton 
               component={Link} 
@@ -184,7 +196,7 @@ function NavBar() {
             <>
               {/* Desktop Navigation - Center */}
               <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', gap: 1.5 }}>
-                {pathname === '/secretary' && secretaryMenuItems.map((item) => (
+                {getMenuItems().map((item) => (
                   <Button
                     key={item.to}
                     component={Link}

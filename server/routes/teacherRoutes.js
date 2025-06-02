@@ -1,9 +1,9 @@
 const express = require("express");
-const { createTeacher, getEmailsTeacher, getTeacherById } = require("../controllers/teacherController");
+const { getEmailsTeacher, getAllTeachers } = require("../controllers/teacherController");
 
 const router = express.Router();
 
-
+router.get("/teachers", getAllTeachers);
 router.get("/teachers/emails", getEmailsTeacher);
 
 
