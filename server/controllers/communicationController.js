@@ -64,7 +64,7 @@ module.exports = {
         }
     },
     async createCommunication(req, res) {
-        const { category_id, secretary_id, teacher_id, subject, body, status, priority } = req.body;
+        const { category_id, secretary_id, teacher_id, subject, body, status, priority,type,meeting_datetime,  attendance_status,attachment } = req.body;
         try {
             const newCommunication = await Communications.create({
                 category_id,
@@ -74,6 +74,10 @@ module.exports = {
                 body,
                 status,
                 priority,
+                type,
+                meeting_datetime,
+                attendance_status,
+                attachment 
             });
             res.status(201).json(newCommunication);
         } catch (error) {
