@@ -7,6 +7,9 @@ import Teacher from '../components/teacher/Teacher';
 import SendMails from '../components/secretary/SendMails';
 import Message from '../components/secretary/Message';
 import ProtectedRoute from '../components/ProtectedRoute';
+import ConfirmationPage from '../components/shared/ConfirmationPage';
+import RejectionPage from '../components/shared/RejectionPage'; // Assuming this is the same component
+
 
 function AppRoutes() {
   return (
@@ -26,6 +29,22 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole="teacher">
             <Teacher />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/confirmation-accepted" 
+        element={
+          <ProtectedRoute requiredRole="secretary">
+            <ConfirmationPage/>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/confirmation-rejected" 
+        element={
+          <ProtectedRoute requiredRole="secretary">
+            <RejectionPage/>
           </ProtectedRoute>
         } 
       />
