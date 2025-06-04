@@ -46,6 +46,7 @@ router.post("/send-email", (req, res, next) => {
       return res.status(400).json({ error: err.message });
     }
     // Si no hay error, continuar con el controlador
+    console.log("Borrame send-email ln 49: ", req);
     sendEmail(req, res);
   });
 });

@@ -109,10 +109,6 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
-    type: { 
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
     meeting_datetime: { 
       type: DataTypes.DATE,
       allowNull: true,

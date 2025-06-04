@@ -50,10 +50,6 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false
       },
-      type: { 
-        type: Sequelize.STRING,
-        allowNull: false
-      },
       meeting_datetime: { // Fecha y hora citacion
         type: Sequelize.DATE,
         allowNull: true
