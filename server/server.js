@@ -16,6 +16,7 @@ const teacherCommunicationRoutes = require("./routes/teacherCommunicationRoutes.
 const tutorCommunicationRoutes = require("./routes/tutorCommunicationRoutes.js");
 const studentCommunicationRoutes = require("./routes/studentCommunicationRoutes.js");
 const authRoutes = require("./routes/authRoutes.js");
+const uploadRoutes = require("./routes/uploadRoutes.js");
 
 const app = express();
 app.use(morgan("dev"));
@@ -39,6 +40,9 @@ app.use("/api", teacherCommunicationRoutes);
 app.use("/api", tutorCommunicationRoutes);
 app.use("/api", studentCommunicationRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api", uploadRoutes);
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 
 app.listen(8080, () => {

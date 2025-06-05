@@ -56,6 +56,7 @@ function Message() {
   const [confirmAttendance, setConfirmAttendance] = useState(false);
   const [priority, setPriority] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
+  const [attachmentUrl, setAttachmentUrl] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -133,7 +134,7 @@ function Message() {
   };
 
   // Función para preparar los datos del formulario
-  const prepareFormData = () => {
+  const prepareFormData = async () => {
     const formData = new FormData();
     
     // Agregar cada campo individualmente para mejor compatibilidad
@@ -146,11 +147,26 @@ function Message() {
     formData.append('selectedTime', selectedTime);
     formData.append('confirmAttendance', confirmAttendance);
     
-    // Agregar archivo si existe
+    // Agregar attachment si existe
     if (selectedFile) {
       formData.append('attachment', selectedFile);
+      try {
+        const response = await fetch('http://localhost:8080/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        if (response.ok) {
+          const data = await response.json();
+          formData.append('attachmentUrl', data.url);
+          setAttachmentUrl(data.url);
+          console.log('attachment subido:', data.url);
+        } else {
+          throw new Error(result.error || 'Error al enviar los correos');
+        }
+      } catch (error) {
+        console.error('Error al subir el attachment:', error);
+      }
     }
-    
     return formData;
   };
 
@@ -299,7 +315,7 @@ function Message() {
       throw error;
     }
   };
-const saveCitation = async () => {
+const saveCitation = async (formData) => {
   const res = [];
   for (const item of selectedIds) {
     const payload = {
@@ -312,7 +328,9 @@ const saveCitation = async () => {
       priority: priority || 1,
       meeting_datetime: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
       attendance_status: messageType === 'citacion' ? (confirmAttendance ? 'Pendiente' : null) : null,
+      attachment: formData.get('attachmentUrl') ?? null,
     };
+    console.log("Borrame saveCitation: ln 333: ", payload);
 
     try {
       const response = await fetch('http://localhost:8080/api/communication', {
@@ -362,7 +380,7 @@ const saveCitation = async () => {
     setIsSending(true);
 
     try {
-      const formData = prepareFormData();
+      const formData = await prepareFormData();
       
       console.log('Iniciando envío de mensaje:', {
         recipientType,
@@ -374,14 +392,15 @@ const saveCitation = async () => {
         confirmAttendance,
         selectedFile: selectedFile ? selectedFile.name : null,
         selectedDate,
-        selectedTime
+        selectedTime, 
+        attachmentUrl,
       });
       for (let pair of formData.entries()) {
         console.log(`${pair[0]}: ${pair[1]}`);
       }
       let comunitacionsIds = [];
       if(messageType === 'citacion') {
-        comunitacionsIds = await saveCitation();
+        comunitacionsIds = await saveCitation(formData);
         formData.append('comunitacionsIds', JSON.stringify(comunitacionsIds));
       }
       // Enviar emails
