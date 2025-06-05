@@ -50,6 +50,18 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false
       },
+      meeting_datetime: { // Fecha y hora citacion
+        type: Sequelize.DATE,
+        allowNull: true
+      },
+      attendance_status: { // Estado de la confirmacion de la asistencia
+        type: Sequelize.STRING,
+        allowNull: true
+      },
+      attachment: { 
+        type: Sequelize.STRING,
+        allowNull: true
+      },
       created_at: {
         type: Sequelize.DATE,
         allowNull: false,

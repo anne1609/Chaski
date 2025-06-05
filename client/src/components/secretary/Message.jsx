@@ -138,6 +138,7 @@ function Message() {
     
     // Agregar cada campo individualmente para mejor compatibilidad
     formData.append('selectedEmails', JSON.stringify(selectedEmails));
+    formData.append('selectedIds', JSON.stringify(selectedIds));
     formData.append('messageType', messageType);
     formData.append('subject', subject);
     formData.append('messageBody', messageBody);
@@ -298,6 +299,39 @@ function Message() {
       throw error;
     }
   };
+const saveCitation = async () => {
+  const res = [];
+  for (const item of selectedIds) {
+    const payload = {
+      category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
+      secretary_id: 1,
+      teacher_id: item,
+      subject,
+      body: messageBody,
+      status: 'Enviado',
+      priority: priority || 1,
+      meeting_datetime: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
+      attendance_status: messageType === 'citacion' ? (confirmAttendance ? 'Pendiente' : null) : null,
+    };
+
+    try {
+      const response = await fetch('http://localhost:8080/api/communication', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) throw new Error('Error al guardar el mensaje');
+      const data = await response.json(); // 👈 Aquí extraes el contenido JSON
+      console.log("ID de la comunicación:", data.id);
+      res.push(data.id); // 👈 Aquí guardas el ID de la comunicación
+    } catch (error) {
+      console.error('Error al guardar el mensaje:', error);
+      alert(`❌ Error al guardar el mensaje: ${error.message}`);
+    }
+  }
+  return res;
+};
 
   // Handler para enviar el email o imprimir según el tipo
   const handleSend = async () => {
@@ -333,6 +367,7 @@ function Message() {
       console.log('Iniciando envío de mensaje:', {
         recipientType,
         selectedEmails,
+        selectedIds,
         messageType,
         subject,
         messageBody,
@@ -341,7 +376,14 @@ function Message() {
         selectedDate,
         selectedTime
       });
-
+      for (let pair of formData.entries()) {
+        console.log(`${pair[0]}: ${pair[1]}`);
+      }
+      let comunitacionsIds = [];
+      if(messageType === 'citacion') {
+        comunitacionsIds = await saveCitation();
+        formData.append('comunitacionsIds', JSON.stringify(comunitacionsIds));
+      }
       // Enviar emails
       await sendEmailInBackground(formData);
       

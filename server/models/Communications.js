@@ -109,6 +109,18 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
+    meeting_datetime: { 
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    attendance_status: { 
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    attachment: { 
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     created_at: {
       type: DataTypes.DATE,
       allowNull: false,

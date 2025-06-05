@@ -3,7 +3,7 @@ const emailQueue = require("../utils/emailQueue");
 
 // Función para generar el contenido HTML basado en el tipo de mensaje
 const generateEmailContent = (messageType, data) => {
-  const { subject, messageBody, selectedDate, selectedTime, confirmAttendance } = data;
+  const { subject, messageBody, selectedDate, selectedTime, confirmAttendance, comunitacionId } = data;
   
   const baseStyle = `
     <style>
@@ -19,7 +19,7 @@ const generateEmailContent = (messageType, data) => {
 
   if (messageType === 'citacion') {
     const teacher_id = 1;
-    const communication_id = 2;
+    const communication_id = comunitacionId;
     const confirmUrl = `http://localhost:5173/confirmation-accepted?communication_id=${communication_id}&teacher_id=${teacher_id}&confirmed=1`;
     const rejectUrl = `http://localhost:5173/confirmation-rejected?communication_id=${communication_id}&teacher_id=${teacher_id}&confirmed=0`;
     return `
@@ -94,18 +94,20 @@ const generateEmailContent = (messageType, data) => {
 
 // Función para procesar el envío real de emails (usada por la cola)
 const processEmailSending = async (emailData) => {
-  const { selectedEmails, messageType, subject, messageBody, selectedDate, selectedTime, confirmAttendance, attachments } = emailData;
-
+  const { selectedEmails, messageType, subject, messageBody, selectedDate, selectedTime, confirmAttendance, attachments, comunitacionsIds } = emailData;
+  const mailsOptions = [];
   // Generar contenido HTML
-  const htmlContent = generateEmailContent(messageType, {
-    subject,
-    messageBody,
-    selectedDate,
-    selectedTime,
-    confirmAttendance
-  });
-
-  // Configurar opciones de correo base
+  if(messageType === 'citacion') {
+    for (const item of comunitacionsIds) {
+    const htmlContent = generateEmailContent(messageType, {
+      subject,
+      messageBody,
+      selectedDate,
+      selectedTime,
+      confirmAttendance,
+      comunitacionId : item,
+    });
+      // Configurar opciones de correo base
   const mailOptions = {
     from: `"Chaski App" <${process.env.EMAIL_USER}>`,
     subject: `[${messageType.toUpperCase()}] ${subject}`,
@@ -113,18 +115,40 @@ const processEmailSending = async (emailData) => {
     html: htmlContent,
     attachments: attachments || []
   };
+    mailsOptions.push(mailOptions);
+    }
+
+  }else{
+  const htmlContent = generateEmailContent(messageType, {
+    subject,
+    messageBody,
+    selectedDate,
+    selectedTime,
+    confirmAttendance
+  });
+    // Configurar opciones de correo base
+  const mailOptions = {
+    from: `"Chaski App" <${process.env.EMAIL_USER}>`,
+    subject: `[${messageType.toUpperCase()}] ${subject}`,
+    text: messageBody,
+    html: htmlContent,
+    attachments: attachments || []
+  };
+  }
 
   const results = [];
   const errors = [];
 
   // Enviar emails individuales para mejor control
+  let index = 0;
   for (const email of selectedEmails) {
     try {
       await transporter.sendMail({
-        ...mailOptions,
+        ...mailsOptions[index],
         to: email
       });
       results.push({ email, status: 'enviado' });
+      index++;
     } catch (error) {
       console.error(`Error enviando a ${email}:`, error);
       errors.push({ email, error: error.message });
@@ -148,7 +172,7 @@ const processEmailSending = async (emailData) => {
 const sendEmailQueue = async (req, res) => {
   try {
     // Extraer datos del formulario (FormData desde frontend)
-    let selectedEmails, messageType, subject, messageBody, selectedDate, selectedTime, confirmAttendance;
+    let selectedEmails, messageType, subject, messageBody, selectedDate, selectedTime, confirmAttendance, comunitacionsIds;
     
     // Si los datos vienen en FormData
     if (req.body.selectedEmails) {
@@ -159,6 +183,7 @@ const sendEmailQueue = async (req, res) => {
       selectedDate = req.body.selectedDate || '';
       selectedTime = req.body.selectedTime || '';
       confirmAttendance = req.body.confirmAttendance === 'true';
+      comunitacionsIds = JSON.parse(req.body.comunitacionsIds || '[]');
     } else {
       // Si los datos vienen como JSON en el body (compatibilidad hacia atrás)
       ({
@@ -168,10 +193,11 @@ const sendEmailQueue = async (req, res) => {
         messageBody = '',
         selectedDate = '',
         selectedTime = '',
-        confirmAttendance = false
+        confirmAttendance = false,
+        comunitacionsIds = []
       } = req.body);
     }
-
+    console.log("Borrame: sendEmailQueue: LN: 176 ", comunitacionsIds);
     // Validaciones
     if (!selectedEmails || selectedEmails.length === 0) {
       return res.status(400).json({ error: "Debe especificar al menos un destinatario" });
@@ -214,7 +240,8 @@ const sendEmailQueue = async (req, res) => {
       selectedDate,
       selectedTime,
       confirmAttendance,
-      attachments
+      attachments,
+      comunitacionsIds
     };
 
     // Agregar a la cola

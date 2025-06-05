@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect }  from 'react';
 import { useLocation } from 'react-router-dom';
 
 const ConfirmationPage = () => {
@@ -10,16 +10,23 @@ const ConfirmationPage = () => {
   const teacherId = queryParams.get('teacher_id');
   const confirmed = queryParams.get('confirmed');
 
+   useEffect(() => {
+    if (communicationId && confirmed) {
+      fetch(`http://localhost:8080/api/communication/${communicationId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          attendance_status: confirmed === '1' ? 'Confirmado' : 'No asistirá',
+        }),
+      });
+    }
+  }, [communicationId, confirmed]);
+
   return (
     <div style={{ textAlign: 'center', marginTop: '50px' }}>
       <h1>🎉 ¡Felicidades!</h1>
       <p>Has confirmado tu asistencia exitosamente.</p>
-      <p><strong>Detalles:</strong></p>
-      <ul style={{ listStyle: 'none', padding: 0 }}>
-        <li><strong>Comunicación ID:</strong> {communicationId}</li>
-        <li><strong>Profesor ID:</strong> {teacherId}</li>
-        <li><strong>Confirmado:</strong> {confirmed === '1' ? 'Sí' : 'No'}</li>
-      </ul>
+      
     </div>
   );
 };

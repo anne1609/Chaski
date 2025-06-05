@@ -64,7 +64,8 @@ module.exports = {
         }
     },
     async createCommunication(req, res) {
-        const { category_id, secretary_id, teacher_id, subject, body, status, priority } = req.body;
+        const { category_id, secretary_id, teacher_id, subject, body, status, priority,meeting_datetime,  attendance_status,attachment } = req.body;
+        console.log("borrame: ln 68: ", req.body);
         try {
             const newCommunication = await Communications.create({
                 category_id,
@@ -74,7 +75,11 @@ module.exports = {
                 body,
                 status,
                 priority,
+                meeting_datetime,
+                attendance_status,
+                attachment 
             });
+            console.log("borrame: ln 82: ", newCommunication);
             res.status(201).json(newCommunication);
         } catch (error) {
             console.error('Error creating communication:', error);
@@ -83,7 +88,7 @@ module.exports = {
     },
     async updateCommunication(req, res) {
         const { id } = req.params;
-        const { category_id, secretary_id, teacher_id, subject, body, status, priority } = req.body;
+        const { category_id, secretary_id, teacher_id, subject, body, status, priority, meeting_datetime,  attendance_status,attachment } = req.body;
         try {
             const communication = await Communications.findByPk(id);
             if (!communication) {
@@ -97,6 +102,9 @@ module.exports = {
                 body,
                 status,
                 priority,
+                meeting_datetime,
+                attendance_status,
+                attachment 
             });
             res.status(200).json(communication);
         } catch (error) {
