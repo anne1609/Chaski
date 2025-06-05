@@ -161,7 +161,7 @@ function Message() {
           setAttachmentUrl(data.url);
           console.log('attachment subido:', data.url);
         } else {
-          throw new Error(result.error || 'Error al enviar los correos');
+          throw new Error('Error al subir el archivo');
         }
       } catch (error) {
         console.error('Error al subir el attachment:', error);
@@ -608,10 +608,14 @@ const saveCitation = async (formData) => {
             value={messageType}
             onChange={(e) => setMessageType(e.target.value)}
             displayEmpty
+            disabled={selectedEmails.length > 0} // Disable when there are recipients
             sx={{
               backgroundColor: '#0A3359',
-              color: 'white',
+              color: 'white !important', // Ensure text color is white
               borderTopLeftRadius: { xs: theme.shape.borderRadius, md: 0 }, // Responsive
+              '& .MuiSelect-select': {
+              color: 'white',
+              },
               borderBottomLeftRadius: { xs: theme.shape.borderRadius, md: 0 }, // Responsive
               // Default right radius will apply, or specify if needed:
               // borderTopRightRadius: theme.shape.borderRadius,

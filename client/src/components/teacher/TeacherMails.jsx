@@ -79,16 +79,15 @@ function TeacherMails() {
               });
             }
             
-            // Agregar tutores del estudiante
+            // Agregar tutores del estudiante (permitir duplicados para diferentes estudiantes)
             student.tutors?.forEach(tutor => {
-              if (!allTutors.find(t => t.id === tutor.id)) {
-                allTutors.push({
-                  ...tutor,
-                  courseId: course.courseId,
-                  courseName: course.courseName,
-                  studentName: student.name
-                });
-              }
+              allTutors.push({
+                ...tutor,
+                courseId: course.courseId,
+                courseName: course.courseName,
+                studentName: student.name,
+                studentId: student.id
+              });
             });
           });
         });
@@ -136,52 +135,42 @@ function TeacherMails() {
     setSelectedTutorEmails(new Set());
   };
 
-  // Combinar estudiantes y tutores en filas unificadas
+  // Combinar estudiantes y tutores - cada estudiante en su propia fila
   const combinedRows = useMemo(() => {
     const rows = [];
-    const processedStudents = new Set();
-    const processedTutors = new Set();
 
-    // Primero, crear filas para estudiantes que tienen tutores
+    // Crear una fila por cada estudiante
     displayedStudents.forEach(student => {
-      const studentTutors = displayedTutors.filter(tutor => 
+      // Buscar tutores asociados a este estudiante
+      const studentTutorsWithDuplicates = displayedTutors.filter(tutor => 
         tutor.studentName === student.name || tutor.studentId === student.id
       );
 
+      // Filtrar tutores únicos por ID para este estudiante específico
+      const studentTutors = studentTutorsWithDuplicates.reduce((acc, tutor) => {
+        if (!acc.find(t => t.id === tutor.id)) {
+          acc.push(tutor);
+        }
+        return acc;
+      }, []);
+
       if (studentTutors.length > 0) {
-        studentTutors.forEach(tutor => {
+        // Si tiene tutores, crear una fila por cada tutor único
+        studentTutors.forEach((tutor, index) => {
           rows.push({
-            id: `student-${student.id}-tutor-${tutor.id}`,
+            id: `student-${student.id}-tutor-${tutor.id}-${index}`,
             student: student,
             tutor: tutor,
             courseName: student.courseName || tutor.courseName
           });
-          processedTutors.add(tutor.id);
         });
-        processedStudents.add(student.id);
-      }
-    });
-
-    // Agregar estudiantes sin tutores
-    displayedStudents.forEach(student => {
-      if (!processedStudents.has(student.id)) {
+      } else {
+        // Si no tiene tutores, crear una fila solo con el estudiante
         rows.push({
           id: `student-${student.id}`,
           student: student,
           tutor: null,
           courseName: student.courseName
-        });
-      }
-    });
-
-    // Agregar tutores sin estudiantes asociados (si los hay)
-    displayedTutors.forEach(tutor => {
-      if (!processedTutors.has(tutor.id)) {
-        rows.push({
-          id: `tutor-${tutor.id}`,
-          student: null,
-          tutor: tutor,
-          courseName: tutor.courseName
         });
       }
     });
@@ -209,11 +198,27 @@ function TeacherMails() {
   }, [combinedRows, searchTerm]);
 
   const searchedStudents = useMemo(() => {
-    return searchedRows.filter(row => row.student).map(row => row.student);
+    const studentsWithDuplicates = searchedRows.filter(row => row.student).map(row => row.student);
+    // Filtrar estudiantes únicos por email para la selección
+    const uniqueStudents = studentsWithDuplicates.reduce((acc, student) => {
+      if (!acc.find(s => s.email === student.email)) {
+        acc.push(student);
+      }
+      return acc;
+    }, []);
+    return uniqueStudents;
   }, [searchedRows]);
 
   const searchedTutors = useMemo(() => {
-    return searchedRows.filter(row => row.tutor).map(row => row.tutor);
+    const tutorsWithDuplicates = searchedRows.filter(row => row.tutor).map(row => row.tutor);
+    // Filtrar tutores únicos por email para la selección
+    const uniqueTutors = tutorsWithDuplicates.reduce((acc, tutor) => {
+      if (!acc.find(t => t.email === tutor.email)) {
+        acc.push(tutor);
+      }
+      return acc;
+    }, []);
+    return uniqueTutors;
   }, [searchedRows]);
 
   const handleSearchChange = (event) => {
@@ -290,8 +295,17 @@ function TeacherMails() {
   const handleComposeMessage = () => {
     const allSelectedEmails = [...selectedStudentEmails, ...selectedTutorEmails];
     const selectedStudents = allStudentsData.filter(student => selectedStudentEmails.has(student.email));
-    const selectedTutors = allTutorsData.filter(tutor => selectedTutorEmails.has(tutor.email));
-    const selectedIds = [...selectedStudents.map(s => s.id), ...selectedTutors.map(t => t.id)];
+    
+    // Filtrar tutores únicos por ID para evitar duplicados en el envío
+    const selectedTutorsWithDuplicates = allTutorsData.filter(tutor => selectedTutorEmails.has(tutor.email));
+    const uniqueTutors = selectedTutorsWithDuplicates.reduce((acc, tutor) => {
+      if (!acc.find(t => t.id === tutor.id)) {
+        acc.push(tutor);
+      }
+      return acc;
+    }, []);
+    
+    const selectedIds = [...selectedStudents.map(s => s.id), ...uniqueTutors.map(t => t.id)];
     
     navigate('/teacher/compose-message', {
       state: {
@@ -299,7 +313,7 @@ function TeacherMails() {
         selectedIds: selectedIds,
         recipientType: 'Estudiantes y Tutores',
         selectedStudents: selectedStudents.length,
-        selectedTutors: selectedTutors.length
+        selectedTutors: uniqueTutors.length
       }
     });
   };
@@ -474,17 +488,10 @@ function TeacherMails() {
               const isTutorSelected = row.tutor ? selectedTutorEmails.has(row.tutor.email) : false;
               const isAnySelected = isStudentSelected || isTutorSelected;
               
-              // Determinar color de fondo - usar siempre el color del estudiante si está presente
-              let backgroundColor = '#1A6487'; // Color azul para estudiantes por defecto
+              // Determinar color de fondo - usar color azul para estudiantes por defecto
+              let backgroundColor = '#1A6487'; // Color azul para estudiantes
               let hoverColor = '#3c90b4';
               let selectedColor = '#124A63';
-              
-              // Si solo hay tutor (sin estudiante), usar color verde
-              if (!row.student && row.tutor) {
-                backgroundColor = '#228C3E';
-                hoverColor = '#2ea046';
-                selectedColor = '#1e7a35';
-              }
 
               return (
                 <TableRow 
@@ -512,22 +519,20 @@ function TeacherMails() {
                 >
                   {/* Checkbox para estudiante */}
                   <TableCell padding="checkbox" sx={{ borderBottom: 'none !important' }}>
-                    {row.student ? (
-                      <Checkbox 
-                        checked={selectedStudentEmails.has(row.student.email)} 
-                        onChange={(event) => {
-                          event.stopPropagation();
-                          handleToggleSelectStudent(row.student.email);
-                        }}
-                        onClick={(event) => event.stopPropagation()}
-                        sx={{ 
+                    <Checkbox 
+                      checked={selectedStudentEmails.has(row.student.email)} 
+                      onChange={(event) => {
+                        event.stopPropagation();
+                        handleToggleSelectStudent(row.student.email);
+                      }}
+                      onClick={(event) => event.stopPropagation()}
+                      sx={{ 
+                        color: 'white',
+                        '&.Mui-checked': {
                           color: 'white',
-                          '&.Mui-checked': {
-                            color: 'white',
-                          },
-                        }}
-                      />
-                    ) : null}
+                        },
+                      }}
+                    />
                   </TableCell>
                   
                   {/* Checkbox para tutor */}
@@ -552,28 +557,16 @@ function TeacherMails() {
                   
                   {/* Nombre del Estudiante */}
                   <TableCell>
-                    {row.student ? (
-                      <Typography variant="body2" component="div">
-                        {row.student.name}
-                      </Typography>
-                    ) : (
-                      <Typography variant="body2" sx={{ opacity: 0.5 }}>
-                        -
-                      </Typography>
-                    )}
+                    <Typography variant="body2" component="div">
+                      {row.student.name}
+                    </Typography>
                   </TableCell>
                   
                   {/* Email del Estudiante */}
                   <TableCell>
-                    {row.student ? (
-                      <Typography variant="caption" display="block">
-                        {row.student.email}
-                      </Typography>
-                    ) : (
-                      <Typography variant="caption" sx={{ opacity: 0.5 }}>
-                        -
-                      </Typography>
-                    )}
+                    <Typography variant="caption" display="block">
+                      {row.student.email}
+                    </Typography>
                   </TableCell>
                   
                   {/* Nombre del Tutor */}
@@ -619,7 +612,7 @@ function TeacherMails() {
                 <TableCell colSpan={7} align="center">
                   <Typography sx={{ fontStyle: 'italic', p: 2 }}>
                     {(allStudentsData.length === 0 && allTutorsData.length === 0) && !loadingCourses ? 'No hay estudiantes ni tutores registrados en sus cursos.' :
-                     (displayedStudents.length === 0 && displayedTutors.length === 0) && selectedCourseId ? `No se encontraron estudiantes ni tutores para el curso ${currentCourseName}.` :
+                     displayedStudents.length === 0 && selectedCourseId ? `No se encontraron estudiantes para el curso ${currentCourseName}.` :
                      searchTerm ? `No se encontraron resultados que coincidan con "${searchTerm}".` :
                      'No hay datos para mostrar según el filtro actual.'}
                   </Typography>
