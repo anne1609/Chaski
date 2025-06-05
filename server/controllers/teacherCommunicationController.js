@@ -1,4 +1,4 @@
-const {Communications, Teachers, Teachers_communications} = require('../models');
+const {Communications, Teachers, Teachers_communications, Secretaries} = require('../models');
 
 module.exports = {
     async getAllTeachersCommunications(req, res) {
@@ -43,8 +43,7 @@ module.exports = {
                     {
                         model: Communications,
                         as: 'communications',
-                        attributes: ['subject', 'body', 'priority', 'status'],
-
+                        attributes: ['subject', 'body', 'priority', 'status'],                        
                     },
                 ],
             });
@@ -54,6 +53,41 @@ module.exports = {
             return res.status(200).json(teacherCommunication);
         } catch (error) {
             console.error('Error al obtener la comunicación del profesor:', error);
+            return res.status(500).json({ message: 'Error interno del servidor' });
+        }
+    },
+    async getTeacherCommunicationsByTeacherId(req, res) {
+        const { teacher_id } = req.params;
+        try {
+            const teacherCommunications = await Teachers_communications.findAll({
+                where: { teacher_id },
+                include: [
+                    {
+                        model: Communications,
+                        as: 'communications',
+                        where: { status: 'Enviado' },
+                        attributes: ['subject', 'body', 'priority', 'status','created_at'],
+                        include: [
+                            {
+                                model: Secretaries,
+                                as: 'secretaries',
+                                attributes: ['names', 'last_names', 'email'],
+                            },
+                        ],
+                    },
+                    {
+                        model: Teachers,
+                        as: 'teachers',
+                        attributes: ['names', 'last_names', 'email'],
+                    },
+                ],
+            });
+            if (!teacherCommunications || teacherCommunications.length === 0) {
+                return res.status(404).json({ message: 'No se encontraron comunicaciones del profesor' });
+            }
+            return res.status(200).json(teacherCommunications);
+        } catch (error) {
+            console.error('Error al obtener las comunicaciones del profesor:', error);
             return res.status(500).json({ message: 'Error interno del servidor' });
         }
     },

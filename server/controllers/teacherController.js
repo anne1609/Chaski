@@ -64,4 +64,30 @@ const getEmailsTeacher = async (req, res) => {
   }
 };
 
-module.exports = { getEmailsTeacher };
+const getAllTeachers = async (req, res) => {
+  try {
+    const teachers = await Teachers.findAll({
+      attributes: ['id', 'names', 'last_names', 'email', 'phone_number', 'specialization'],
+      order: [['last_names', 'ASC'], ['names', 'ASC']] // Optional: order teachers
+    });
+
+    if (!teachers || teachers.length === 0) {
+      return res.status(404).json({ message: "No se encontraron profesores" });
+    }
+
+    const teachersWithDetails = teachers.map(teacher => ({
+      id: teacher.id,
+      name: `${teacher.names} ${teacher.last_names}`,
+      email: teacher.email,
+      phone_number: teacher.phone_number,
+      specialization: teacher.specialization
+    }));
+
+    res.status(200).json({ teachers: teachersWithDetails });
+  } catch (error) {
+    console.error("Error al obtener los profesores:", error);
+    res.status(500).json({ error: "Error al obtener los profesores" });
+  }
+};
+
+module.exports = { getEmailsTeacher, getAllTeachers };
