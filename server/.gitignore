@@ -43,3 +43,6 @@ pids/
 # Variables de entorno
 .env
 .env.*.local
+
+# Custom
+uploads/*
