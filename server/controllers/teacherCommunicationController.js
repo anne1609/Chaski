@@ -65,24 +65,25 @@ module.exports = {
                     {
                         model: Communications,
                         as: 'communications',
-                        attributes: ['subject', 'body', 'priority', 'status', 'created_at'],
+                        where: { status: 'Enviado' },
+                        attributes: ['subject', 'body', 'priority', 'status','created_at'],
                         include: [
-                            {
-                                model: Teachers,
-                                as: 'teachers',
-                                attributes: ['names', 'last_names', 'email'],
-                            },
                             {
                                 model: Secretaries,
                                 as: 'secretaries',
                                 attributes: ['names', 'last_names', 'email'],
-                            }
+                            },
                         ],
+                    },
+                    {
+                        model: Teachers,
+                        as: 'teachers',
+                        attributes: ['names', 'last_names', 'email'],
                     },
                 ],
             });
-            if (!teacherCommunications) {
-                return res.status(404).json({ message: 'No se encontraron comunicaciones para este profesor' });
+            if (!teacherCommunications || teacherCommunications.length === 0) {
+                return res.status(404).json({ message: 'No se encontraron comunicaciones del profesor' });
             }
             return res.status(200).json(teacherCommunications);
         } catch (error) {
