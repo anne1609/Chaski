@@ -4,6 +4,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from '../components/Login';
 import Secretary from '../components/secretary/Secretary';
 import Teacher from '../components/teacher/Teacher';
+import TeacherMails from '../components/teacher/TeacherMails';
 import SendMails from '../components/secretary/SendMails';
 import Message from '../components/secretary/Message';
 import ProtectedRoute from '../components/ProtectedRoute';
@@ -60,6 +61,22 @@ function AppRoutes() {
         path="/secretary/compose-message" 
         element={
           <ProtectedRoute requiredRole="secretary">
+            <Message />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/teacher/mails" 
+        element={
+          <ProtectedRoute requiredRole="teacher">
+            <TeacherMails />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/teacher/compose-message" 
+        element={
+          <ProtectedRoute requiredRole="teacher">
             <Message />
           </ProtectedRoute>
         } 

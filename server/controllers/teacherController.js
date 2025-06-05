@@ -1,4 +1,4 @@
-const { Teachers, Grades, TeacherGrades, Subjects } = require("../models");
+const { Teachers, Grades, TeacherGrades, Subjects, Students, Tutors, Tutors_Students, SubjectsTeachers } = require("../models");
 
 const getEmailsTeacher = async (req, res) => {
   const { gradeId } = req.query; // Get gradeId from query parameters
@@ -90,4 +90,106 @@ const getAllTeachers = async (req, res) => {
   }
 };
 
-module.exports = { getEmailsTeacher, getAllTeachers };
+const getTeacherCoursesWithStudentsAndTutors = async (req, res) => {
+  try {
+    const teacherId = req.user.id; // Obtener el ID del profesor autenticado
+
+    // Obtener todas las materias que enseña el profesor
+    const teacherSubjects = await SubjectsTeachers.findAll({
+      where: { teacher_id: teacherId },
+      include: [
+        {
+          model: Subjects,
+          as: 'subject',
+          include: [
+            {
+              model: Grades,
+              attributes: ['id', 'name']
+            }
+          ]
+        }
+      ]
+    });
+
+    if (!teacherSubjects || teacherSubjects.length === 0) {
+      return res.status(200).json({ 
+        courses: [], 
+        message: "No se encontraron materias asignadas a este profesor" 
+      });
+    }
+
+    // Procesar cada materia para obtener estudiantes y tutores
+    const coursesWithDetails = await Promise.all(
+      teacherSubjects.map(async (teacherSubject) => {
+        const subject = teacherSubject.subject;
+        const grade = subject.Grade;
+
+        // Obtener todos los estudiantes del grado
+        const students = await Students.findAll({
+          where: { grade_id: grade.id },
+          attributes: ['id', 'names', 'last_names', 'email'],
+          order: [['last_names', 'ASC'], ['names', 'ASC']]
+        });
+
+        // Obtener tutores para cada estudiante
+        const studentsWithTutors = await Promise.all(
+          students.map(async (student) => {
+            // Buscar relaciones tutor-estudiante
+            const tutorStudentRelations = await Tutors_Students.findAll({
+              where: { student_id: student.id },
+              include: [
+                {
+                  model: Tutors,
+                  as: 'tutor',
+                  attributes: ['id', 'names', 'last_names', 'email', 'phone_number']
+                }
+              ]
+            });
+
+            const tutors = tutorStudentRelations.map(relation => ({
+              id: relation.tutor.id,
+              name: `${relation.tutor.names} ${relation.tutor.last_names}`,
+              email: relation.tutor.email,
+              phone_number: relation.tutor.phone_number
+            }));
+
+            return {
+              id: student.id,
+              name: `${student.names} ${student.last_names}`,
+              email: student.email,
+              tutors: tutors
+            };
+          })
+        );
+
+        return {
+          courseId: `${grade.name}-${subject.name}`,
+          courseName: `${grade.name} - ${subject.name}`,
+          grade: {
+            id: grade.id,
+            name: grade.name
+          },
+          subject: {
+            id: subject.id,
+            name: subject.name,
+            description: subject.description
+          },
+          students: studentsWithTutors,
+          totalStudents: studentsWithTutors.length
+        };
+      })
+    );
+
+    res.status(200).json({ 
+      teacherId: teacherId,
+      courses: coursesWithDetails,
+      totalCourses: coursesWithDetails.length
+    });
+
+  } catch (error) {
+    console.error("Error al obtener los cursos del profesor:", error);
+    res.status(500).json({ error: "Error al obtener los cursos del profesor" });
+  }
+};
+
+module.exports = { getEmailsTeacher, getAllTeachers, getTeacherCoursesWithStudentsAndTutors };
