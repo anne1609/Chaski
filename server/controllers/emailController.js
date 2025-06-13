@@ -95,30 +95,31 @@ const generateEmailContent = (messageType, data) => {
 // Función para procesar el envío real de emails (usada por la cola)
 const processEmailSending = async (emailData) => {
   const { selectedEmails, messageType, subject, messageBody, selectedDate, selectedTime, confirmAttendance, attachments, comunitacionsIds } = emailData;
-  const mailsOptions = [];
   // Generar contenido HTML
-  if(messageType === 'citacion') {
-    for (const item of comunitacionsIds) {
+  console.log("Borrame: processEmailSending: LN: 100 ", messageType,subject,messageBody);
+  const mailsOptions = [];
+let mailOptions = null; // <-- define aquí
+
+if (messageType === 'citacion') {
+  for (const item of comunitacionsIds) {
     const htmlContent = generateEmailContent(messageType, {
       subject,
       messageBody,
       selectedDate,
       selectedTime,
       confirmAttendance,
-      comunitacionId : item,
+      comunitacionId: item,
     });
-      // Configurar opciones de correo base
-  const mailOptions = {
-    from: `"Chaski App" <${process.env.EMAIL_USER}>`,
-    subject: `[${messageType.toUpperCase()}] ${subject}`,
-    text: messageBody,
-    html: htmlContent,
-    attachments: attachments || []
-  };
-    mailsOptions.push(mailOptions);
-    }
-
-  }else{
+    const mailOpt = {
+      from: `"Chaski App" <${process.env.EMAIL_USER}>`,
+      subject: `[${messageType.toUpperCase()}] ${subject}`,
+      text: messageBody,
+      html: htmlContent,
+      attachments: attachments || []
+    };
+    mailsOptions.push(mailOpt);
+  }
+} else {
   const htmlContent = generateEmailContent(messageType, {
     subject,
     messageBody,
@@ -126,35 +127,38 @@ const processEmailSending = async (emailData) => {
     selectedTime,
     confirmAttendance
   });
-    // Configurar opciones de correo base
-  const mailOptions = {
+  mailOptions = { // <-- asigna aquí
     from: `"Chaski App" <${process.env.EMAIL_USER}>`,
     subject: `[${messageType.toUpperCase()}] ${subject}`,
     text: messageBody,
     html: htmlContent,
     attachments: attachments || []
   };
-  }
-
-  const results = [];
-  const errors = [];
-
-  // Enviar emails individuales para mejor control
-  let index = 0;
-  for (const email of selectedEmails) {
-    try {
+}
+const results = [];
+const errors = [];
+// Enviar emails individuales para mejor control
+let index = 0;
+for (const email of selectedEmails) {
+  try {
+    if (messageType === 'citacion') {
       await transporter.sendMail({
         ...mailsOptions[index],
         to: email
       });
-      results.push({ email, status: 'enviado' });
-      index++;
-    } catch (error) {
-      console.error(`Error enviando a ${email}:`, error);
-      errors.push({ email, error: error.message });
+    } else {
+      await transporter.sendMail({
+        ...mailOptions,
+        to: email
+      });
     }
+    results.push({ email, status: 'enviado' });
+    index++;
+  } catch (error) {
+    console.error(`Error enviando a ${email}:`, error);
+    errors.push({ email, error: error.message });
   }
-
+}
   return {
     message: `Proceso completado. ${results.length} correos enviados exitosamente`,
     enviados: results.length,
