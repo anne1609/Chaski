@@ -46,8 +46,8 @@ function Message() {
   const navigate = useNavigate();
   const theme = useTheme();
 
-  const { selectedEmails = [], selectedIds = [], recipientType = 'Desconocido' } = location.state || {};
-  
+  const { selectedEmails = [], selectedIds = [], recipientType = 'Desconocido' , remitentType='teacher',selectedIdsTutors=[],selectedIdsStudents=[],selectedEmailsTutors=[],selectedEmailsStudents=[] } = location.state || {};
+
 
   const [openModal, setOpenModal] = useState(false);
   const [messageType, setMessageType] = useState(''); // Default to empty string
@@ -317,7 +317,9 @@ function Message() {
   };
 const saveCitation = async (formData) => {
   const res = [];
-  for (const item of selectedIds) {
+  if(remitentType === 'secretary') {
+
+    for (const item of selectedIds) {
     const payload = {
       category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
       secretary_id: 1,
@@ -347,6 +349,52 @@ const saveCitation = async (formData) => {
       console.error('Error al guardar el mensaje:', error);
       alert(`❌ Error al guardar el mensaje: ${error.message}`);
     }
+  }
+  }else{
+    
+    for (const item of selectedIdsTutors) {
+    const payload = {
+      category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
+      secretary_id: null,
+      teacher_id: 6,
+      subject,
+      body: messageBody,
+      status: 'Enviado',
+      priority: priority || 1,
+      meeting_datetime: null,
+      attendance_status: null,
+      attachment: formData.get('attachmentUrl') ?? null,
+    };
+    console.log("Borrame saveCitation: ln 333: ", payload);
+
+    try {
+      const response = await fetch('http://localhost:8080/api/communication', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) throw new Error('Error al guardar el mensaje');
+      const data = await response.json(); // 👈 Aquí extraes el contenido JSON
+      console.log("ID de la comunicación:", data.id);
+      //res.push(data.id); // 👈 Aquí guardas el ID de la comunicación
+      const tutorCommRes = await fetch('http://localhost:8080/api/tutors-communications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tutor_id: item,
+              communication_id: data.id,
+              date_confirmed: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
+            }),
+          });
+          if (!tutorCommRes.ok) throw new Error('Error al guardar la comunicación del estudiante');
+          const datatutor = await tutorCommRes.json();
+          res.push(datatutor.id);
+    } catch (error) {
+      console.error('Error al guardar el mensaje:', error);
+      alert(`❌ Error al guardar el mensaje: ${error.message}`);
+    }
+  }
   }
   return res;
 };

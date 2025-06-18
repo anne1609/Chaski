@@ -141,6 +141,7 @@ function TeachersMails() {
         selectedEmails: Array.from(selectedEmails),
         selectedIds: selectedTeachersIds,
         recipientType: 'Profesores',
+        remitentType: 'secretary',
       }
     });
   };

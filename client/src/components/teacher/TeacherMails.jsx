@@ -312,8 +312,11 @@ function TeacherMails() {
         selectedEmails: allSelectedEmails,
         selectedIds: selectedIds,
         recipientType: 'Estudiantes y Tutores',
-        selectedStudents: selectedStudents.length,
-        selectedTutors: uniqueTutors.length
+        selectedIdsTutors:  uniqueTutors.map(t => t.id),
+        remitentType: 'teacher',
+        selectedIdsStudents: selectedStudents.map(s => s.id),
+        selectedEmailsTutors: uniqueTutors.map(t => t.email),
+        selectedEmailsStudents: selectedStudents.map(s => s.email),
       }
     });
   };

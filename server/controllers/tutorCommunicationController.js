@@ -57,11 +57,12 @@ module.exports = {
         }
     },
     async createTutorCommunication(req, res) {
-        const {tutor_id, communication_id} = req.body;
+        const {tutor_id, communication_id,date_confirmed} = req.body;
         try {
             const newTutorCommunication = await Tutors_Communications.create({
                 tutor_id,
                 communication_id,
+                date_confirmed
             });
             return res.status(201).json(newTutorCommunication);
         } catch (error) {
