@@ -81,6 +81,14 @@ function AppRoutes() {
           </ProtectedRoute>
         } 
       />
+      <Route 
+        path="/teacher/notice" 
+        element={
+          <ProtectedRoute requiredRole="teacher">
+            <Message />
+          </ProtectedRoute>
+        } 
+      />
     </Routes>
   );
 }
