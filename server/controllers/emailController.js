@@ -3,8 +3,8 @@ const emailQueue = require("../utils/emailQueue");
 
 // Función para generar el contenido HTML basado en el tipo de mensaje
 const generateEmailContent = (messageType, data) => {
-  const { subject, messageBody, selectedDate, selectedTime, confirmAttendance, comunitacionId } = data;
-  
+  const { subject, messageBody, selectedDate, selectedTime, confirmAttendance, comunitacionId, sendTo } = data;
+  console.log("Borrame:generateEmailContent ln 7 ", data);
   const baseStyle = `
     <style>
       body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
@@ -20,8 +20,9 @@ const generateEmailContent = (messageType, data) => {
   if (messageType === 'citacion') {
     const teacher_id = 1;
     const communication_id = comunitacionId;
-    const confirmUrl = `http://localhost:5173/confirmation-accepted?communication_id=${communication_id}&teacher_id=${teacher_id}&confirmed=1`;
-    const rejectUrl = `http://localhost:5173/confirmation-rejected?communication_id=${communication_id}&teacher_id=${teacher_id}&confirmed=0`;
+    const cleanSendTo = sendTo.replace(/"/g, '');
+    const confirmUrl = `http://localhost:5173/confirmation-accepted?communication_id=${communication_id}&send_to=${cleanSendTo}&confirmed=1`;
+    const rejectUrl = `http://localhost:5173/confirmation-rejected?communication_id=${communication_id}&send_to=${cleanSendTo}&confirmed=0`;
     return `
       ${baseStyle}
       <div class="header">
@@ -94,9 +95,9 @@ const generateEmailContent = (messageType, data) => {
 
 // Función para procesar el envío real de emails (usada por la cola)
 const processEmailSending = async (emailData) => {
-  const { selectedEmails, messageType, subject, messageBody, selectedDate, selectedTime, confirmAttendance, attachments, comunitacionsIds } = emailData;
+  const { selectedEmails, messageType, subject, messageBody, selectedDate, selectedTime, confirmAttendance, attachments, comunitacionsIds, sendTo } = emailData;
   // Generar contenido HTML
-  console.log("Borrame: processEmailSending: LN: 100 ", messageType,subject,messageBody);
+  console.log("Borrame: processEmailSending: LN: 99 ", emailData);
   const mailsOptions = [];
 let mailOptions = null; // <-- define aquí
 
@@ -109,6 +110,7 @@ if (messageType === 'citacion') {
       selectedTime,
       confirmAttendance,
       comunitacionId: item,
+      sendTo,
     });
     const mailOpt = {
       from: `"Chaski App" <${process.env.EMAIL_USER}>`,
@@ -176,7 +178,7 @@ for (const email of selectedEmails) {
 const sendEmailQueue = async (req, res) => {
   try {
     // Extraer datos del formulario (FormData desde frontend)
-    let selectedEmails, messageType, subject, messageBody, selectedDate, selectedTime, confirmAttendance, comunitacionsIds;
+    let selectedEmails, messageType, subject, messageBody, selectedDate, selectedTime, confirmAttendance, comunitacionsIds, sendTo;
     
     // Si los datos vienen en FormData
     if (req.body.selectedEmails) {
@@ -188,6 +190,7 @@ const sendEmailQueue = async (req, res) => {
       selectedTime = req.body.selectedTime || '';
       confirmAttendance = req.body.confirmAttendance === 'true';
       comunitacionsIds = JSON.parse(req.body.comunitacionsIds || '[]');
+      sendTo = req.body.sendTo || 'indefinido';
     } else {
       // Si los datos vienen como JSON en el body (compatibilidad hacia atrás)
       ({
@@ -245,7 +248,8 @@ const sendEmailQueue = async (req, res) => {
       selectedTime,
       confirmAttendance,
       attachments,
-      comunitacionsIds
+      comunitacionsIds,
+      sendTo
     };
 
     // Agregar a la cola

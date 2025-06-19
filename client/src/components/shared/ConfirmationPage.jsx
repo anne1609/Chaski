@@ -12,6 +12,7 @@ const ConfirmationPage = () => {
 
    useEffect(() => {
     if (communicationId && confirmed) {
+      
       fetch(`http://localhost:8080/api/communication/${communicationId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
