@@ -61,16 +61,19 @@ function Message() {
   const [selectedTime, setSelectedTime] = useState('');
   const [isSending, setIsSending] = useState(false);
 
-  // Efecto para establecer el tipo de mensaje por defecto basado en destinatarios
+  // Efecto para establecer el tipo de mensaje por defecto basado en destinatarios o ruta
   useEffect(() => {
-    if (selectedEmails.length === 0) {
+    // Si se accede desde la ruta /teacher/notice, establecer automáticamente como "aviso"
+    if (location.pathname === '/teacher/notice') {
+      setMessageType('aviso');
+    } else if (selectedEmails.length === 0) {
       // Si no hay destinatarios, establecer como "aviso" por defecto
       setMessageType('aviso');
     } else {
       // Si hay destinatarios, establecer como "mensaje" por defecto
       setMessageType('mensaje');
     }
-  }, [selectedEmails.length]); // Se ejecuta cuando cambia el número de destinatarios
+  }, [selectedEmails.length, location.pathname]); // Se ejecuta cuando cambia el número de destinatarios o la ruta
 
   const handleOpenModal = () => setOpenModal(true);
   const handleCloseModal = () => setOpenModal(false);
@@ -161,7 +164,7 @@ function Message() {
           setAttachmentUrl(data.url);
           console.log('attachment subido:', data.url);
         } else {
-          throw new Error(result.error || 'Error al enviar los correos');
+          throw new Error('Error al subir el archivo');
         }
       } catch (error) {
         console.error('Error al subir el attachment:', error);
@@ -749,7 +752,6 @@ const saveCitation = async (formData) => {
               Selecciona un tipo
             </MenuItem>
             <MenuItem value="citacion">Citación</MenuItem>
-            <MenuItem value="aviso"> Aviso</MenuItem>
             <MenuItem value="mensaje"> Mensaje</MenuItem>
           </Select>
         </FormControl>
@@ -976,7 +978,7 @@ const saveCitation = async (formData) => {
       </Grid>
 
       {/* Row 5: Confirm Attendance Checkbox */}
-      {messageType !== 'aviso' && (
+      {messageType === 'citacion' && (
         <Grid item xs={12}>
           <FormControlLabel
             control={<Checkbox checked={confirmAttendance} onChange={(e) => setConfirmAttendance(e.target.checked)} />}
