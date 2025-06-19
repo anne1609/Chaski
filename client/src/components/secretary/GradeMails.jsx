@@ -113,17 +113,27 @@ function GradeMails() {
     setSelectedTutorEmails(new Set()); 
   };
 
-  const searchedTutors = useMemo(() => {
-    if (!searchTerm.trim()) {
-      return displayedTutors;
-    }
-    const lowerSearchTerm = searchTerm.toLowerCase();
-    return displayedTutors.filter(tutor =>
-      tutor.name.toLowerCase().includes(lowerSearchTerm) ||
-      (tutor.email && tutor.email.toLowerCase().includes(lowerSearchTerm)) ||
-      (tutor.studentsToDisplayInTable && tutor.studentsToDisplayInTable.some(student => student.name.toLowerCase().includes(lowerSearchTerm)))
-    );
-  }, [displayedTutors, searchTerm]);
+  const rows = useMemo(() => {
+  return displayedTutors.flatMap(tutor =>
+    (tutor.studentsToDisplayInTable || [])
+      .filter(student => {
+        if (!searchTerm.trim()) return true;
+        const term = searchTerm.toLowerCase();
+        return (
+          student.name.toLowerCase().includes(term) ||
+          tutor.name.toLowerCase().includes(term) ||
+          (tutor.email && tutor.email.toLowerCase().includes(term))
+        );
+      })
+      .map(student => ({
+        student: student.name,
+        tutor: tutor.name,
+        email: tutor.email,
+        grade: student.gradeName || 'N/A',
+      }))
+  );
+}, [displayedTutors, searchTerm]);
+
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
@@ -142,18 +152,18 @@ function GradeMails() {
   }, []);
 
   const numSelectedInSearched = useMemo(() => {
-    return searchedTutors.filter(tutor => selectedTutorEmails.has(tutor.email)).length;
-  }, [searchedTutors, selectedTutorEmails]);
+    return displayedTutors.filter(tutor => selectedTutorEmails.has(tutor.email)).length;
+  }, [displayedTutors, selectedTutorEmails]);
 
-  const allSearchedSelected = searchedTutors.length > 0 && numSelectedInSearched === searchedTutors.length;
+  const allSearchedSelected = displayedTutors.length > 0 && numSelectedInSearched === displayedTutors.length;
 
   const handleSelectAllClick = useCallback(() => {
     if (allSearchedSelected) {
       setSelectedTutorEmails(new Set());
     } else {
-      setSelectedTutorEmails(new Set(searchedTutors.map(t => t.email)));
+      setSelectedTutorEmails(new Set(displayedTutors.map(t => t.email)));
     }
-  }, [searchedTutors, allSearchedSelected]);
+  }, [displayedTutors, allSearchedSelected]);
   const selectedTutors = allTutorsData.filter(tutor => selectedTutorEmails.has(tutor.email));
   const selectedTutorsIds = selectedTutors.map(tutor => tutor.id);
   const handleComposeMessage = () => {
@@ -186,7 +196,7 @@ function GradeMails() {
             variant="contained"
             size="small"
             onClick={handleSelectAllClick}
-            disabled={searchedTutors.length === 0}
+            disabled={displayedTutors.length === 0}
             sx={{
               paddingInline: 5,
               whiteSpace: 'nowrap',
@@ -300,11 +310,11 @@ function GradeMails() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {searchedTutors.map((tutor) => (
+            {rows.map((row, idx) => (
                 <TableRow 
-                  key={tutor.id} 
-                  selected={selectedTutorEmails.has(tutor.email)}
-                  onClick={() => handleToggleSelectTutor(tutor.email)}
+                  key={idx} 
+                  selected={selectedTutorEmails.has(row.email)}
+                  onClick={() => handleToggleSelectTutor(row.email)}
                   sx={{
                       cursor: 'pointer',
                       backgroundColor: '#1A6487',
@@ -330,10 +340,10 @@ function GradeMails() {
                     sx={{ borderBottom: 'none !important' }}
                   >
                     <Checkbox 
-                      checked={selectedTutorEmails.has(tutor.email)} 
+                      checked={selectedTutorEmails.has(row.email)} 
                       onChange={(event) => {
                         event.stopPropagation(); 
-                        handleToggleSelectTutor(tutor.email);
+                        handleToggleSelectTutor(row.email);
                       }}
                       onClick={(event) => event.stopPropagation()}
                       sx={{ 
@@ -345,32 +355,29 @@ function GradeMails() {
                     />
                   </TableCell>
                   <TableCell>
-                    {(tutor.studentsToDisplayInTable && tutor.studentsToDisplayInTable.length > 0)
-                      ? tutor.studentsToDisplayInTable.map(s => s.name).join(', ')
-                      : 'N/A'}
+                    {row.student ? (
+                      <Typography variant="body1" component="div">{row.student}</Typography>
+                    ) : (
+                      <Typography variant="body1" component="div" sx={{ fontStyle: 'italic' }}>Sin estudiantes</Typography>
+                    )}
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body1" component="div">{tutor.name}</Typography>
-                    <Typography variant="caption" display="block">{tutor.email}</Typography>
+                    <Typography variant="body1" component="div">{row.tutor}</Typography>
+                    <Typography variant="caption" display="block">{row.email}</Typography>
                   </TableCell>
                   <TableCell>
-                    {selectedGradeId
-                      ? currentGradeName
-                      : (tutor.studentsToDisplayInTable && tutor.studentsToDisplayInTable.length > 0)
-                        ? [...new Set(tutor.studentsToDisplayInTable.map(s => s.gradeName))].join(', ')
-                        : 'N/A'}
+                    {row.grade ? (
+                      <Typography variant="body1" component="div">{row.grade}</Typography>
+                    ) : (
+                      <Typography variant="body1" component="div" sx={{ fontStyle: 'italic' }}>Sin grado asignado</Typography>
+                    )}
                   </TableCell>
                 </TableRow>
             ))}
-            {searchedTutors.length === 0 && (
-              <TableRow sx={{ '& td': { backgroundColor: theme.palette.background.paper, color: theme.palette.text.primary } }}>
-                <TableCell colSpan={4} align="center">
-                  <Typography sx={{ fontStyle: 'italic', p: 2 }}>
-                    {allTutorsData.length === 0 && !loadingTutors ? 'No hay tutores registrados en el sistema.' :
-                     displayedTutors.length === 0 && selectedGradeId ? `No se encontraron tutores para el grado ${currentGradeName}.` :
-                     searchTerm ? `No se encontraron tutores que coincidan con "${searchTerm}".` :
-                     'No hay tutores para mostrar según el filtro actual.'}
-                  </Typography>
+            {rows.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={4} sx={{ textAlign: 'center', color: theme.palette.text.secondary }}>
+                  No se encontraron tutores que coincidan con la búsqueda.
                 </TableCell>
               </TableRow>
             )}
