@@ -57,11 +57,12 @@ module.exports = {
         }
     },
     async createStudentCommunication(req, res) {
-        const {student_id, communication_id} = req.body;
+        const {student_id, communication_id,  meeting_datetime,} = req.body;
         try {
             const newStudentCommunication = await Students_Communications.create({
                 student_id,
                 communication_id,
+                meeting_datetime,
             });
             return res.status(201).json(newStudentCommunication);
         } catch (error) {
@@ -111,26 +112,35 @@ module.exports = {
         }
     },
     async confirmAttendance(req, res) {
-        const { communication_id,student_id,confirmed } = req.query;
+        const { communication_id,confirmed } = req.query;
 
         try {
             const attendance = await Students_Communications.findOne({
                 where: {
                     communication_id,
-                    student_id,
                 },
             });
 
             if (!attendance) {
                 return res.status(404).json({ message: 'No se encontró la asistencia del estudiante' });
             }
-            attendance.confirmed = confirmed === '1';
-            await attendance.save();
-            if (attendance.confirmed) {
-                return res.status(200).json({ message: 'Asistencia confirmada' });
-            }else {
-                return res.status(200).json({ message: 'Asistencia rechazada' });
-            }
+        if (confirmed === '1') {
+            attendance.confirmed = 'confirmado';
+        } else if (confirmed === '0') {
+            attendance.confirmed = 'rechazado';
+        } else {
+            attendance.confirmed = 'pendiente';
+        }
+        await attendance.save();
+
+        if (attendance.confirmed === 'confirmado') {
+            return res.status(200).json({ message: 'Asistencia confirmada' });
+        } else if (attendance.confirmed === 'rechazado') {
+            return res.status(200).json({ message: 'Asistencia rechazada' });
+        } else {
+            return res.status(200).json({ message: 'Asistencia pendiente' });
+        }   
+
         } catch (error) {
             console.error('Error al confirmar la asistencia del estudiante:', error);
             return res.status(500).json({ message: 'Error interno del servidor' });

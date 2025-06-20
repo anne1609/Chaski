@@ -391,7 +391,7 @@ const saveCitation = async (formData) => {
               body: JSON.stringify({
                 tutor_id: item,
                 communication_id: data.id,
-                date_confirmed: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
+                meeting_datetime: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
               }),
             });
             if (!tutorCommRes.ok) throw new Error('Error al guardar la comunicación del estudiante');
@@ -444,7 +444,7 @@ const saveCitation = async (formData) => {
               body: JSON.stringify({
                 student_id: item,
                 communication_id: data.id,
-                date_confirmed: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
+                meeting_datetime: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
               }),
             });
             if (!studentCommRes.ok) throw new Error('Error al guardar la comunicación del estudiante');

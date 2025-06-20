@@ -23,19 +23,15 @@ module.exports = {
         },
       },
       confirmed: {
-        type: Sequelize.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
+        type: Sequelize.STRING, 
+        allowNull: true,
+        defaultValue: 'pendiente', 
       },
-      date_confirmed: {
+      meeting_datetime: {
         type: Sequelize.DATE,
         allowNull: true,
       },
-      presence: {
-        type: Sequelize.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
+      
     });
   },
 

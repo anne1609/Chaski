@@ -41,18 +41,13 @@ module.exports = (sequelize, DataTypes) => {
       },
     },
     confirmed: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false,
+      type: DataTypes.STRING, 
+      allowNull: true,
+      defaultValue: 'pendiente', 
     },
-    date_confirmed: {
+    meeting_datetime:  {
       type: DataTypes.DATE,
       allowNull: true,
-    },
-    presence: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false,
     },
   }, {
     sequelize,

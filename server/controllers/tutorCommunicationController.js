@@ -57,12 +57,12 @@ module.exports = {
         }
     },
     async createTutorCommunication(req, res) {
-        const {tutor_id, communication_id,date_confirmed} = req.body;
+        const {tutor_id, communication_id,meeting_datetime} = req.body;
         try {
             const newTutorCommunication = await Tutors_Communications.create({
                 tutor_id,
                 communication_id,
-                date_confirmed
+                meeting_datetime
             });
             return res.status(201).json(newTutorCommunication);
         } catch (error) {
@@ -118,24 +118,32 @@ module.exports = {
         }
     },
     async confirmAttendance(req, res) {
-        const { communication_id,tutor_id,confirmed } = req.query;
+        const { communication_id,confirmed } = req.query;
         try {
             const attendance = await Tutors_Communications.findOne({
                 where: {
                     communication_id,
-                    tutor_id,
                 },
             });
 
             if (!attendance) {
                 return res.status(404).json({ message: 'No se encontró la asistencia del tutor' });
             }
-            attendance.confirmed = confirmed === '1';
-            await attendance.save();
-            if (attendance.confirmed) {
-                return res.status(200).json({ message: 'Asistencia confirmada' });
+            if (confirmed === '1') {
+            attendance.confirmed = 'confirmado';
+            } else if (confirmed === '0') {
+                attendance.confirmed = 'rechazado';
             } else {
+                attendance.confirmed = 'pendiente';
+            }
+            await attendance.save();
+           
+            if (attendance.confirmed === 'confirmado') {
+            return res.status(200).json({ message: 'Asistencia confirmada' });
+            } else if (attendance.confirmed === 'rechazado') {
                 return res.status(200).json({ message: 'Asistencia rechazada' });
+            } else {
+                return res.status(200).json({ message: 'Asistencia pendiente' });
             }
         } catch (error) {
             console.error('Error confirming attendance:', error);

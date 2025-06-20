@@ -36,17 +36,13 @@ function AppRoutes() {
       <Route 
         path="/confirmation-accepted" 
         element={
-          <ProtectedRoute requiredRole="secretary">
-            <ConfirmationPage/>
-          </ProtectedRoute>
+          <ConfirmationPage/>
         } 
       />
       <Route 
         path="/confirmation-rejected" 
         element={
-          <ProtectedRoute requiredRole="secretary">
-            <RejectionPage/>
-          </ProtectedRoute>
+          <RejectionPage/>
         } 
       />
       <Route 
