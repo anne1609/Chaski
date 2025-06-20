@@ -152,7 +152,16 @@ function CommunicationsStatus({ role }) {
                       >
                         Reenviar
                       </Button>
-                    )}   
+                    )} 
+                    <Button
+                      variant="contained"
+                      color="info"
+                      component={Link}
+                      to={`/secretary/attendance/${communication.id}`}
+                      sx={{ mr: 1 }}
+                    >
+                      Ver asistencia
+                    </Button>  
                     <Button
                       variant="contained"
                       color="tertiary"

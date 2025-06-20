@@ -10,7 +10,7 @@ import Message from '../components/secretary/Message';
 import ProtectedRoute from '../components/ProtectedRoute';
 import ConfirmationPage from '../components/shared/ConfirmationPage';
 import RejectionPage from '../components/shared/RejectionPage'; // Assuming this is the same component
-
+import TeacherAttendanceStatus from '../components/teacher/TeacherAttendanceStatus';
 
 function AppRoutes() {
   return (
@@ -46,6 +46,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole="secretary">
             <RejectionPage/>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/secretary/attendance/:communicationId" 
+        element={
+          <ProtectedRoute requiredRole="secretary">
+            <TeacherAttendanceStatus />
           </ProtectedRoute>
         } 
       />
