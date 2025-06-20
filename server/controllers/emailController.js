@@ -21,8 +21,8 @@ const generateEmailContent = (messageType, data) => {
     const teacher_id = 1;
     const communication_id = comunitacionId;
     const cleanSendTo = sendTo.replace(/"/g, '');
-    const confirmUrl = `http://localhost:5173/confirmation-accepted?communication_id=${communication_id}&send_to=${cleanSendTo}&confirmed=1`;
-    const rejectUrl = `http://localhost:5173/confirmation-rejected?communication_id=${communication_id}&send_to=${cleanSendTo}&confirmed=0`;
+    const confirmUrl = `http://localhost:5173/tutor-confirmation?communication_id=${communication_id}&send_to=${cleanSendTo}&confirmed=1`;
+    const rejectUrl = `http://localhost:5173/tutor-confirmation?communication_id=${communication_id}&send_to=${cleanSendTo}&confirmed=0`;
     return `
       ${baseStyle}
       <div class="header">

@@ -10,13 +10,14 @@ import Message from '../components/secretary/Message';
 import ProtectedRoute from '../components/ProtectedRoute';
 import ConfirmationPage from '../components/shared/ConfirmationPage';
 import RejectionPage from '../components/shared/RejectionPage'; // Assuming this is the same component
-
+import TutorConfirmationPage from '../components/shared/TutorConfirmationPage';
 
 function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/tutor-confirmation" element={<TutorConfirmationPage />} />
       <Route 
         path="/secretary" 
         element={

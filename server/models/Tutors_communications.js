@@ -40,20 +40,16 @@ module.exports = (sequelize, DataTypes) => {
         key: 'id',
       },
     },
-    confirmed: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false,
-    },
-    date_confirmed: {
+    attendance_status: {
+    type: DataTypes.STRING, 
+    allowNull: true,
+    defaultValue: 'pendiente', 
+  },
+    meeting_datetime: {
       type: DataTypes.DATE,
       allowNull: true,
     },
-    presence: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false,
-    },
+    
   }, {
     sequelize,
     modelName: 'Tutors_Communications',

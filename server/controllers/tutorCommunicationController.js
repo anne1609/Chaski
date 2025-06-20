@@ -72,11 +72,11 @@ module.exports = {
     },
     async updateTutorCommunication(req, res) {
         const { tutor_id, communication_id } = req.params;
-        const { status } = req.body;
+        const { attendance_status } = req.body;
 
         try {
             const [updated] = await Tutors_Communications.update(
-                { status },
+                { attendance_status },
                 {
                     where: {
                         tutor_id,
@@ -130,13 +130,24 @@ module.exports = {
             if (!attendance) {
                 return res.status(404).json({ message: 'No se encontró la asistencia del tutor' });
             }
-            attendance.confirmed = confirmed === '1';
-            await attendance.save();
-            if (attendance.confirmed) {
-                return res.status(200).json({ message: 'Asistencia confirmada' });
+            
+            if (confirmed === '1') {
+                attendance.confirmed = 'confirmado';
+            } else if (confirmed === '0') {
+                attendance.confirmed = 'rechazado';
             } else {
-                return res.status(200).json({ message: 'Asistencia rechazada' });
+                attendance.confirmed = 'pendiente';
             }
+            await attendance.save();
+            
+            if (attendance.confirmed === 'confirmado') {
+                return res.status(200).json({ message: 'Asistencia confirmada' });
+            } else if (attendance.confirmed === 'rechazado') {
+                return res.status(200).json({ message: 'Asistencia rechazada' });
+            } else {
+                return res.status(200).json({ message: 'Asistencia pendiente' });
+            }
+
         } catch (error) {
             console.error('Error confirming attendance:', error);
             return res.status(500).json({ message: 'Error interno del servidor' });
