@@ -1,4 +1,4 @@
-const {Communications, Teachers, Teachers_communications, Secretaries} = require('../models');
+const {Communications, Teachers, Teachers_communications, Secretaries, Categories} = require('../models');
 
 module.exports = {
     async getAllTeachersCommunications(req, res) {
@@ -71,9 +71,15 @@ module.exports = {
                             {
                                 model: Secretaries,
                                 as: 'secretaries',
-                                attributes: ['names', 'last_names', 'email'],
+                                attributes: ['names', 'last_names', 'email'],                                
+                            },
+                            {
+                                model: Categories,
+                                as: 'category',
+                                attributes: ['name'],
                             },
                         ],
+                           
                     },
                     {
                         model: Teachers,

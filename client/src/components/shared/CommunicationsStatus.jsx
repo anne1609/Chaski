@@ -139,7 +139,7 @@ function CommunicationsStatus({ role }) {
                         to={`/secretary/edit/${communication.id}`}
                         sx={{ mr: 1 }}                    
                       >
-                        Seguir Editando
+                        Editar
                       </Button>
                     )}   
                     {communication.status !== 'Guardado' && communication.status !== 'Archivado' && (  

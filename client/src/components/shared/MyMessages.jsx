@@ -55,6 +55,7 @@ function MyMessages({ role }) {
                                 <TableCell>Asunto</TableCell>                                
                                 <TableCell>Mensaje</TableCell>
                                 <TableCell>Fecha</TableCell>
+                                <TableCell>Tipo</TableCell>
                                 <TableCell>Detalles</TableCell>
                             </TableRow>
                         </TableHead>
@@ -89,7 +90,8 @@ function MyMessages({ role }) {
                                                 whiteSpace: 'nowrap',
                                             }}
                                         >{comm.body}</TableCell>
-                                        <TableCell>{new Date(comm.created_at).toLocaleDateString()}</TableCell>                                        
+                                        <TableCell>{new Date(comm.created_at).toLocaleDateString()}</TableCell>
+                                        <TableCell>{comm.category.name}</TableCell>                                        
                                         <TableCell
                                             sx={{
                                                 display: 'flex',
