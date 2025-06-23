@@ -11,6 +11,7 @@ import ProtectedRoute from '../components/ProtectedRoute';
 import ConfirmationPage from '../components/shared/ConfirmationPage';
 import RejectionPage from '../components/shared/RejectionPage'; // Assuming this is the same component
 import TeacherAttendanceStatus from '../components/teacher/TeacherAttendanceStatus';
+import EditMessage from '../components/shared/EditMessage';
 
 function AppRoutes() {
   return (
@@ -96,6 +97,14 @@ function AppRoutes() {
             <Message />
           </ProtectedRoute>
         } 
+      />
+      <Route 
+        path="/edit-message/:id" 
+        element={
+          <ProtectedRoute requiredRole="secretary">
+            <EditMessage />
+          </ProtectedRoute>
+        }
       />
     </Routes>
   );

@@ -136,7 +136,7 @@ function CommunicationsStatus({ role }) {
                         variant="contained"
                         color="secondary"
                         component={Link}
-                        to={`/secretary/edit/${communication.id}`}
+                        to={`/edit-message/${communication.id}`}
                         sx={{ mr: 1 }}                    
                       >
                         Editar
