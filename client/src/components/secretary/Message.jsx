@@ -23,8 +23,7 @@ import {
   Typography,
   IconButton,
 } from '@mui/material';
-//import CloseIcon from '@mui/icons-material/Close';
-// import { useTheme } from '@mui/material/styles'; // Not strictly needed for now
+import { useAuth } from '../../hooks/useAuth';
 
 // Style for Modal
 const modalStyle = {
@@ -41,10 +40,10 @@ const modalStyle = {
 };
 
 function Message() {
-  // const theme = useTheme(); // Not strictly needed for now
   const location = useLocation();
   const navigate = useNavigate();
   const theme = useTheme();
+  const { user } = useAuth();
 
   const { selectedEmails = [], selectedIds = [], recipientType = 'Desconocido' , remitentType='teacher',selectedIdsTutors=[],selectedIdsStudents=[],selectedEmailsTutors=[],selectedEmailsStudents=[] } = location.state || {};
 
@@ -358,18 +357,18 @@ const saveCitation = async (formData) => {
       formData.set('sendTo', JSON.stringify('profesor'));
       await sendEmailInBackground(formData);
     }
-  }else{
+  }else if(remitentType === 'teacher' && user) {
     for (const item of selectedIdsTutors) {
       const payload = {
         category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
         secretary_id: null,
-        teacher_id: 6,
+        teacher_id: user.id, // Asociar el mensaje con el id del profesor logueado
         subject,
         body: messageBody,
         status: 'Enviado',
         priority: priority || 1,
-        meeting_datetime: null,
-        attendance_status: null,
+        meeting_datetime: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
+        attendance_status: messageType === 'citacion' ? (confirmAttendance ? 'Pendiente' : null) : null,
         attachment: formData.get('attachmentUrl') ?? null,
       };
       console.log("Borrame saveCitation: ln 333: ", payload);
@@ -515,9 +514,8 @@ const saveCitation = async (formData) => {
       for (let pair of formData.entries()) {
         console.log(`${pair[0]}: ${pair[1]}`);
       }
-      let comunitacionsIds = [];
       if(messageType === 'citacion') {
-        comunitacionsIds = await saveCitation(formData);
+        await saveCitation(formData);
       }else{
         await sendEmailInBackground(formData);
       }
@@ -559,8 +557,8 @@ const saveCitation = async (formData) => {
     console.log('Has teachers:', hasTeachers);
     const payload = {
     category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
-    secretary_id: 1,
-    teacher_id: null,
+    secretary_id: remitentType === 'secretary' ? 1 : null,
+    teacher_id: remitentType === 'teacher' && user ? user.id : null, // Asociar con el id del usuario logueado si es profesor
     subject,
     body: messageBody,
     status: 'Guardado',

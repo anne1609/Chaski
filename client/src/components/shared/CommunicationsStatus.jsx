@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Box, Button, Tab } from '@mui/material';
+import { useAuth } from '../../hooks/useAuth';
 
 function CommunicationsStatus({ role }) {
+  const { user } = useAuth();
   const [communications, setCommunications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -14,8 +16,11 @@ function CommunicationsStatus({ role }) {
         if (!response.ok) {
           throw new Error('Error al cargar las comunicaciones');
         }
-        const data = await response.json();
-        console.log("Borrame: useEffect ln 18 ", data);
+        let data = await response.json();
+        // Filtrar por profesor si el role es teacher
+        if (role === 'teacher' && user) {
+          data = data.filter(c => c.teacher_id === user.id);
+        }
         setCommunications(data);
       } catch (err) {
         setError(err.message);
@@ -25,49 +30,47 @@ function CommunicationsStatus({ role }) {
     };
 
     fetchCommunications();
-  }, []);
+  }, [role, user]);
 
   const handleStatusChange = async (id, newStatus, communicationItem = {}) => {
     try {
       if (newStatus === 'Enviado') {
         //const responseTeacher = await fetch(`http://localhost:8080/api/teacher/${communicationItem.teacher_id}`);
-        if(true){
-          //const teacherData = await responseTeacher.json();
-          const formData = new FormData();
+        //const teacherData = await responseTeacher.json();
+        const formData = new FormData();
 
-          // Agregar cada campo individualmente
-          formData.append('selectedEmails', JSON.stringify([communicationItem.teachers.email]));
-          formData.append('selectedIds', JSON.stringify([communicationItem.teachers.id]));
-          formData.append('messageType', communicationItem.category.name);
-          formData.append('subject', communicationItem.subject);
-          formData.append('messageBody', communicationItem.body);
+        // Agregar cada campo individualmente
+        formData.append('selectedEmails', JSON.stringify([communicationItem.teachers.email]));
+        formData.append('selectedIds', JSON.stringify([communicationItem.teachers.id]));
+        formData.append('messageType', communicationItem.category.name);
+        formData.append('subject', communicationItem.subject);
+        formData.append('messageBody', communicationItem.body);
 
-          // Extraer fecha y hora de meeting_datetime
-          const meetingDate = new Date(communicationItem.meeting_datetime);
-          formData.append('selectedDate', meetingDate.toISOString().split('T')[0]); // YYYY-MM-DD
-          formData.append('selectedTime', meetingDate.toTimeString().split(' ')[0].slice(0, 5)); // HH:MM
+        // Extraer fecha y hora de meeting_datetime
+        const meetingDate = new Date(communicationItem.meeting_datetime);
+        formData.append('selectedDate', meetingDate.toISOString().split('T')[0]); // YYYY-MM-DD
+        formData.append('selectedTime', meetingDate.toTimeString().split(' ')[0].slice(0, 5)); // HH:MM
 
-          formData.append('confirmAttendance', communicationItem.attendance_status);
-          formData.set('comunitacionsIds', JSON.stringify([id]));
-          formData.set('sendTo', JSON.stringify('profesor'));
+        formData.append('confirmAttendance', communicationItem.attendance_status);
+        formData.set('comunitacionsIds', JSON.stringify([id]));
+        formData.set('sendTo', JSON.stringify('profesor'));
 
-          // Agregar archivo si existe
-          if (communicationItem.attachment != null) {
-            formData.append('attachments', [communicationItem.attachment]);
-          }
-          const response = await fetch('http://localhost:8080/api/send-email-queue', {
-            method: 'POST',
-            body: formData,
-          });
+        // Agregar archivo si existe
+        if (communicationItem.attachment != null) {
+          formData.append('attachments', [communicationItem.attachment]);
+        }
+        const response = await fetch('http://localhost:8080/api/send-email-queue', {
+          method: 'POST',
+          body: formData,
+        });
 
-          const result = await response.json();
+        const result = await response.json();
 
-          if (response.ok) {
-            // Solo retornar el resultado, no mostrar alert aquí
-            return result;
-          } else {
-            throw new Error(result.error || 'Error al enviar los correos');
-          }
+        if (response.ok) {
+          // Solo retornar el resultado, no mostrar alert aquí
+          return result;
+        } else {
+          throw new Error(result.error || 'Error al enviar los correos');
         }
       }
       if (newStatus === 'Archivado') {
@@ -202,8 +205,8 @@ function CommunicationsStatus({ role }) {
                       to={`/secretary/attendance/${communication.id}`}
                       sx={{ mr: 1 }}
                     >
-                      Ver asistencia
-                    </Button>  
+              Ver asistencia
+            </Button>  
                     <Button
                       variant="contained"
                       color="tertiary"

@@ -11,6 +11,7 @@ import ProtectedRoute from '../components/ProtectedRoute';
 import ConfirmationPage from '../components/shared/ConfirmationPage';
 import RejectionPage from '../components/shared/RejectionPage'; // Assuming this is the same component
 import TeacherAttendanceStatus from '../components/teacher/TeacherAttendanceStatus';
+import TeacherCommunications from '../components/teacher/TeacherCommunications';
 
 function AppRoutes() {
   return (
@@ -90,6 +91,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole="teacher">
             <Message />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/teacher/messages" 
+        element={
+          <ProtectedRoute requiredRole="teacher">
+            <TeacherCommunications />
           </ProtectedRoute>
         } 
       />
