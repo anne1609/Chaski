@@ -13,7 +13,7 @@ module.exports = {
                     {
                         model: Teachers,
                         as: 'teachers',
-                        attributes: ['id', 'names', 'last_names'],
+                        attributes: ['id', 'names', 'last_names', 'email'],
                     },
                     {
                         model: Categories,

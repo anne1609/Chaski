@@ -89,6 +89,32 @@ const getAllTeachers = async (req, res) => {
     res.status(500).json({ error: "Error al obtener los profesores" });
   }
 };
+const getTeacher = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const teacher = await Teachers.findByPk(id, {
+      attributes: ['id', 'names', 'last_names', 'email', 'phone_number', 'specialization']
+    });
+
+    if (!teacher) {
+      return res.status(404).json({ message: "Profesor no encontrado" });
+    }
+
+    const teacherDetails = {
+      id: teacher.id,
+      name: `${teacher.names} ${teacher.last_names}`,
+      email: teacher.email,
+      phone_number: teacher.phone_number,
+      specialization: teacher.specialization
+    };
+
+    res.status(200).json({ teacher: teacherDetails });
+  } catch (error) {
+    console.error("Error al obtener el profesor:", error);
+    res.status(500).json({ error: "Error al obtener el profesor" });
+  }
+};
 
 const getTeacherCoursesWithStudentsAndTutors = async (req, res) => {
   try {
@@ -192,4 +218,4 @@ const getTeacherCoursesWithStudentsAndTutors = async (req, res) => {
   }
 };
 
-module.exports = { getEmailsTeacher, getAllTeachers, getTeacherCoursesWithStudentsAndTutors };
+module.exports = { getEmailsTeacher, getAllTeachers, getTeacherCoursesWithStudentsAndTutors, getTeacher };
