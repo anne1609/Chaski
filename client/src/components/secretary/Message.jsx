@@ -139,7 +139,7 @@ function Message() {
   // Función para preparar los datos del formulario
   const prepareFormData = async () => {
     const formData = new FormData();
-    
+
     // Agregar cada campo individualmente para mejor compatibilidad
     formData.append('selectedEmails', JSON.stringify(selectedEmails));
     formData.append('selectedIds', JSON.stringify(selectedIds));
@@ -149,7 +149,7 @@ function Message() {
     formData.append('selectedDate', selectedDate);
     formData.append('selectedTime', selectedTime);
     formData.append('confirmAttendance', confirmAttendance);
-    
+
     // Agregar attachment si existe
     if (selectedFile) {
       formData.append('attachment', selectedFile);
@@ -180,7 +180,7 @@ function Message() {
     // Verificar si el archivo adjunto es una imagen
     const isImage = selectedFile && selectedFile.type.startsWith('image/');
     let imageContent = '';
-    
+
     if (isImage) {
       // Crear URL temporal para la imagen
       const imageURL = URL.createObjectURL(selectedFile);
@@ -198,25 +198,25 @@ function Message() {
       <head>
         <title>Aviso - Chaski App</title>
         <style>
-          body { 
-            font-family: Arial, sans-serif; 
-            line-height: 1.6; 
-            color: #333; 
-            max-width: 800px; 
-            margin: 0 auto; 
-            padding: 20px; 
+          body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
           }
-          .header { 
-            background-color: #0A3359; 
-            color: white; 
-            padding: 20px; 
-            text-align: center; 
+          .header {
+            background-color: #0A3359;
+            color: white;
+            padding: 20px;
+            text-align: center;
             margin-bottom: 20px;
             border-radius: 8px;
           }
-          .content { 
-            padding: 20px; 
-            background-color: #f9f9f9; 
+          .content {
+            padding: 20px;
+            background-color: #f9f9f9;
             border: 1px solid #ddd;
             border-radius: 8px;
           }
@@ -229,7 +229,7 @@ function Message() {
             border-bottom: 2px solid #0A3359;
             padding-bottom: 10px;
           }
-          .message-content { 
+          .message-content {
             font-size: 16px;
             line-height: 1.8;
             margin: 20px 0;
@@ -242,10 +242,10 @@ function Message() {
             text-align: center;
             margin: 20px 0;
           }
-          .footer { 
-            margin-top: 30px; 
-            text-align: center; 
-            font-size: 12px; 
+          .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
             color: #666;
             border-top: 1px solid #ddd;
             padding-top: 15px;
@@ -278,7 +278,7 @@ function Message() {
     const printWindow = window.open('', '_blank');
     printWindow.document.write(printContent);
     printWindow.document.close();
-    
+
     // Si hay imagen, esperar a que se cargue antes de imprimir
     if (isImage) {
       printWindow.onload = () => {
@@ -347,7 +347,7 @@ const saveCitation = async (formData) => {
         const data = await response.json(); // 👈 Aquí extraes el contenido JSON
         console.log("ID de la comunicación:", data.id);
         res.push(data.id); // 👈 Aquí guardas el ID de la comunicación
-        
+
       } catch (error) {
         console.error('Error al guardar el mensaje:', error);
         alert(`❌ Error al guardar el mensaje: ${error.message}`);
@@ -498,7 +498,7 @@ const saveCitation = async (formData) => {
 
     try {
       const formData = await prepareFormData();
-      
+
       console.log('Iniciando envío de mensaje:', {
         recipientType,
         selectedEmails,
@@ -509,7 +509,7 @@ const saveCitation = async (formData) => {
         confirmAttendance,
         selectedFile: selectedFile ? selectedFile.name : null,
         selectedDate,
-        selectedTime, 
+        selectedTime,
         attachmentUrl,
       });
       for (let pair of formData.entries()) {
@@ -522,11 +522,11 @@ const saveCitation = async (formData) => {
         await sendEmailInBackground(formData);
       }
       // Enviar emails
-      
-      
+
+
       // Mostrar mensaje de éxito único y redirigir
       alert(`✅ Correos enviados exitosamente!\n\nDestinatarios: ${selectedEmails.length}\nTipo: ${messageType}`);
-      
+
       // Limpiar el formulario
       setMessageType('');
       setSubject('');
@@ -548,7 +548,7 @@ const saveCitation = async (formData) => {
       setIsSending(false);
     }
   };
-  
+
   const handleSave = async () => {
     console.log('Guardar mensaje:', { recipientType, selectedEmails, selectedIds, messageType, subject, messageBody, confirmAttendance,  priority, selectedFile, selectedDate, selectedTime });
     const hasStudents = recipientType.toLowerCase().includes('estudiantes');
@@ -590,13 +590,13 @@ const saveCitation = async (formData) => {
           });
           if (!studentCommRes.ok) throw new Error('Error al guardar la comunicación del estudiante');
         }
-      } 
+      }
       if (hasTutors && selectedIds && selectedIds.length > 0 && communicationId) {
         for (const tutorId of selectedIds) {
           console.log('Guardando comunicación del tutor:', { tutorId, communicationId });
           const tutorCommRes = await fetch('http://localhost:8080/api/tutors-communications', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },          
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             tutor_id: tutorId,
             communication_id: communicationId,
@@ -604,7 +604,7 @@ const saveCitation = async (formData) => {
         });
         if (!tutorCommRes.ok) throw new Error('Error al guardar la comunicación del tutor');
         }
-      } 
+      }
       if (hasTeachers && selectedIds && selectedIds.length > 0 && communicationId) {
         for (const teacherId of selectedIds) {
           console.log('Guardando comunicación del profesor:', { teacherId, communicationId });
@@ -632,7 +632,7 @@ const saveCitation = async (formData) => {
       <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
         Componer Mensaje
       </Typography>
-      
+
       {/* Tabla de destinatarios - Solo mostrar si no es tipo aviso */}
       {messageType !== 'aviso' && (
         <TableContainer component={Paper} sx={{ mb: 3, borderRadius: '8px', border: '1px solid #eee' }} elevation={0}>
@@ -677,8 +677,8 @@ const saveCitation = async (formData) => {
                   </Button>
                 </TableCell>
                 <TableCell>
-                  {messageType === 'aviso' 
-                    ? 'N/A (No requerido)' 
+                  {messageType === 'aviso'
+                    ? 'N/A (No requerido)'
                     : selectedEmails.length
                   }
                 </TableCell>
@@ -868,9 +868,9 @@ const saveCitation = async (formData) => {
                 // borderTopRightRadius: { xs: theme.shape.borderRadius, md: 0 }, // Removed for consistency
                 // borderBottomRightRadius: { xs: theme.shape.borderRadius, md: 0 }, // Removed for consistency
                 borderRadius: '4px', // Apply consistent border radius
-                backgroundColor: '#1A6487', // Changed from #0A3359                
+                backgroundColor: '#1A6487', // Changed from #0A3359
                 minWidth: '70vw', // Ensure full width
-                color: 'white',                
+                color: 'white',
                 '& .MuiOutlinedInput-notchedOutline': {
                   borderColor: 'rgba(255, 255, 255, 0.5)',
                   // borderRightWidth: { xs: 1, md: 0 }, // Removed for consistency
@@ -908,7 +908,7 @@ const saveCitation = async (formData) => {
             InputProps={{
               sx: {
                 borderRadius: '4px',
-                backgroundColor: '#1A6487',                
+                backgroundColor: '#1A6487',
                 color: 'white',
                 '& .MuiOutlinedInput-notchedOutline': {
                   borderColor: 'rgba(255, 255, 255, 0.5)',
@@ -1008,8 +1008,8 @@ const saveCitation = async (formData) => {
               sx={{
                 backgroundColor: messageType === 'aviso' ? '#FF6B35' : '#2C965A',
                 color: 'white',
-                '&:hover': { 
-                  backgroundColor: messageType === 'aviso' ? '#E55A2B' : '#278552' 
+                '&:hover': {
+                  backgroundColor: messageType === 'aviso' ? '#E55A2B' : '#278552'
                 },
                 '&:disabled': {
                   backgroundColor: '#ccc',
@@ -1018,10 +1018,10 @@ const saveCitation = async (formData) => {
               }}
               fullWidth
             >
-              {isSending 
-                ? 'Enviando...' 
-                : messageType === 'aviso' 
-                  ? 'Imprimir' 
+              {isSending
+                ? 'Enviando...'
+                : messageType === 'aviso'
+                  ? 'Imprimir'
                   : 'Enviar'
               }
             </Button>
