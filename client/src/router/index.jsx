@@ -12,7 +12,7 @@ import ConfirmationPage from '../components/shared/ConfirmationPage';
 import RejectionPage from '../components/shared/RejectionPage'; // Assuming this is the same component
 import TeacherAttendanceStatus from '../components/teacher/TeacherAttendanceStatus';
 import TeacherCommunications from '../components/teacher/TeacherCommunications';
-
+import DetailsPage from '../components/shared/DetailsPage';
 function AppRoutes() {
   return (
     <Routes>
@@ -33,6 +33,14 @@ function AppRoutes() {
             <Teacher />
           </ProtectedRoute>
         } 
+      />
+      <Route 
+        path="/secretary/communication/:communicationId"
+        element={
+          <ProtectedRoute requiredRole="secretary">
+            <DetailsPage />
+          </ProtectedRoute>
+        }
       />
       <Route 
         path="/confirmation-accepted" 
