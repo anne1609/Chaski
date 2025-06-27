@@ -8,5 +8,6 @@ router.post('/students-communications', studentCommunicationController.createStu
 router.put('/students-communications/:student_id/:communication_id', studentCommunicationController.updateStudentCommunication);
 router.delete('/students-communications/:student_id/:communication_id', studentCommunicationController.deleteStudentCommunication);
 router.get('/confirm-attendance-students', studentCommunicationController.confirmAttendance);
+router.get('/students-communications/:communication_id', studentCommunicationController.getStudentCommunicationByIdCommunication);
 
 module.exports = router;

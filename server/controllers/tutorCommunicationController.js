@@ -56,6 +56,32 @@ module.exports = {
             return res.status(500).json({ message: 'Error interno del servidor' });
         }
     },
+
+    async getTutorCommunicationByIdCommunication(req, res) {
+        const {communication_id} = req.params;
+        try {
+            const tutorCommunication = await Tutors_Communications.findOne({
+                where: {
+                    communication_id,
+                },
+                include: [
+                    {
+                        model: Tutors,
+                        as: 'tutors',
+                        attributes: ['names', 'last_names', 'email'],
+                    },
+                ],
+            });
+            if (!tutorCommunication) {
+                return res.status(404).json({ message: 'No se encontró la comunicación del tutor' });
+            }
+            return res.status(200).json(tutorCommunication);
+        } catch (error) {
+            console.error('Error al obtener la comunicación del tutor:', error);
+            return res.status(500).json({ message: 'Error interno del servidor' });
+        }
+    },
+
     async createTutorCommunication(req, res) {
         const {tutor_id, communication_id,meeting_datetime} = req.body;
         try {

@@ -9,5 +9,6 @@ router.put('/teachers-communications/:teacher_id/:communication_id', teacherComm
 router.delete('/teachers-communications/:teacher_id/:communication_id', teacherCommunicationController.deleteTeacherCommunication);
 router.get('/confirm-attendance-teachers', teacherCommunicationController.confirmAttendance);
 router.get('/teachers-communications/:teacher_id', teacherCommunicationController.getTeacherCommunicationsByTeacherId);
+router.get('/teachers-communicationscomunications/:communication_id', teacherCommunicationController.getTeacherCommunicationsByCommunicationId);
 
 module.exports = router;
