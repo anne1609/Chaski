@@ -45,8 +45,8 @@ function EditMessage() {
   const location = useLocation();
   const navigate = useNavigate();
   const theme = useTheme();
-
-    const { selectedEmails = [], selectedIds = [], recipientType = 'Desconocido' , remitentType='teacher',selectedIdsTutors=[],selectedIdsStudents=[],selectedEmailsTutors=[],selectedEmailsStudents=[] } = location.state || {};
+  
+    const { selectedEmails = [], selectedIds = [] , remitentType='teacher',selectedIdsTutors=[],selectedIdsStudents=[],selectedEmailsTutors=[],selectedEmailsStudents=[] } = location.state || {};
     const { id } = useParams(); 
 
   const [openModal, setOpenModal] = useState(false);
@@ -60,22 +60,36 @@ function EditMessage() {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [recipients, setRecipients] = useState([]);
+  const [loadingRecipients, setLoadingRecipients] = useState(false);
+  const [recipientType, setRecipientType] = useState(''); 
 
 
     useEffect(() => {
-    if (!id) return;
-    fetch(`http://localhost:8080/api/communication/${id}`)
-        .then(res => res.json())
-        .then(data => {
-        setMessageType(data.category_id === 1 ? 'citacion' : data.category_id === 2 ? 'aviso' : 'mensaje');
-        setSubject(data.subject || '');
-        setMessageBody(data.body || '');
-        setPriority(data.priority || '');
-        setSelectedDate(data.meeting_datetime ? data.meeting_datetime.split('T')[0] : '');
-        setSelectedTime(data.meeting_datetime ? data.meeting_datetime.split('T')[1]?.slice(0,5) : '');
-        setConfirmAttendance(data.attendance_status === 'Pendiente');
-        });
-        console.log(setMessageType, setSubject, setMessageBody, setPriority, setSelectedDate, setSelectedTime, setConfirmAttendance);
+      if (!id) return;
+    
+      const loadData = async () => {
+        try {
+          const response = await fetch(`http://localhost:8080/api/communication/${id}`);
+          const data = await response.json();
+          
+          setMessageType(data.category_id === 1 ? 'citacion' : data.category_id === 2 ? 'aviso' : 'mensaje');
+          setSubject(data.subject || '');
+          setMessageBody(data.body || '');
+          setPriority(data.priority || '');
+          setSelectedDate(data.meeting_datetime ? data.meeting_datetime.split('T')[0] : '');
+          setSelectedTime(data.meeting_datetime ? data.meeting_datetime.split('T')[1]?.slice(0,5) : '');
+          setConfirmAttendance(data.attendance_status === 'Pendiente');
+          
+          // Cargar destinatarios DESPUÉS de obtener los datos de la comunicación
+          await fetchRecipients(id, data.category_id);
+          
+        } catch (error) {
+          console.error('Error al cargar datos:', error);
+        }
+      };
+      
+      loadData();
     }, [id]);
   const handleOpenModal = () => setOpenModal(true);
   const handleCloseModal = () => setOpenModal(false);
@@ -89,6 +103,55 @@ function EditMessage() {
       setSelectedFile(event.target.files[0]);
     }
   };
+
+  const fetchRecipients = async (communicationId, categoryId) => {
+  setLoadingRecipients(true);
+  
+  try {
+    let endpoints = [];
+    let allRecipients = [];
+    
+    if (categoryId === 1 || categoryId === 3) { 
+      endpoints = [
+        { url: `http://localhost:8080/api/teachers-communicationscomunications/${communicationId}`, type: 'teachers' },
+        { url: `http://localhost:8080/api/tutors-communications/${communicationId}`, type: 'tutors' },
+        { url: `http://localhost:8080/api/students-communications/${communicationId}`, type: 'students' }
+      ];
+    } else if (categoryId === 2) { 
+      endpoints = [
+        { url: `http://localhost:8080/api/students-communications/${communicationId}`, type: 'students' }
+      ];
+    }
+
+    for (const endpoint of endpoints) {
+      try {
+        const response = await fetch(endpoint.url);
+        if (response.ok) {
+          const data = await response.json();
+          
+          const recipientsWithType = data.map(recipient => ({
+            ...recipient,
+            recipientType: endpoint.type
+          }));
+          
+          allRecipients = [...allRecipients, ...recipientsWithType];
+        } else {
+          console.log(`Endpoint ${endpoint.url} devolvió status:`, response.status);
+        }
+      } catch (error) {
+        console.error(`Error al obtener ${endpoint.type}:`, error);
+      }
+    }
+
+    console.log('✅ Todos los destinatarios obtenidos:', allRecipients);
+    setRecipients(allRecipients);
+
+  } catch (error) {
+    console.error('Error al obtener destinatarios:', error);
+  } finally {
+    setLoadingRecipients(false);
+  }
+};
 
   // Función para validar el formulario
   const validateForm = () => {
@@ -134,167 +197,6 @@ function EditMessage() {
     return true;
   };
 
-  // Función para preparar los datos del formulario
-  const prepareFormData = async () => {
-    const formData = new FormData();
-    
-    // Agregar cada campo individualmente para mejor compatibilidad
-    formData.append('selectedEmails', JSON.stringify(selectedEmails));
-    formData.append('selectedIds', JSON.stringify(selectedIds));
-    formData.append('messageType', messageType);
-    formData.append('subject', subject);
-    formData.append('messageBody', messageBody);
-    formData.append('selectedDate', selectedDate);
-    formData.append('selectedTime', selectedTime);
-    formData.append('confirmAttendance', confirmAttendance);
-    
-    // Agregar attachment si existe
-    if (selectedFile) {
-      formData.append('attachment', selectedFile);
-      try {
-        const response = await fetch('http://localhost:8080/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-        if (response.ok) {
-          const data = await response.json();
-          formData.append('attachmentUrl', data.url);
-          setAttachmentUrl(data.url);
-          console.log('attachment subido:', data.url);
-        } else {
-          throw new Error('Error al subir el archivo');
-        }
-      } catch (error) {
-        console.error('Error al subir el attachment:', error);
-      }
-    }
-    return formData;
-  };
-
-  // Función para generar e imprimir PDF (para avisos)
-  const handlePrint = () => {
-    if (!validateForm()) return;
-
-    // Verificar si el archivo adjunto es una imagen
-    const isImage = selectedFile && selectedFile.type.startsWith('image/');
-    let imageContent = '';
-    
-    if (isImage) {
-      // Crear URL temporal para la imagen
-      const imageURL = URL.createObjectURL(selectedFile);
-      imageContent = `
-        <div class="image-container">
-          <img src="${imageURL}" alt="Imagen adjunta" style="max-width: 100%; height: auto; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
-        </div>
-      `;
-    }
-
-    // Crear contenido HTML para imprimir
-    const printContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Aviso - Chaski App</title>
-        <style>
-          body { 
-            font-family: Arial, sans-serif; 
-            line-height: 1.6; 
-            color: #333; 
-            max-width: 800px; 
-            margin: 0 auto; 
-            padding: 20px; 
-          }
-          .header { 
-            background-color: #0A3359; 
-            color: white; 
-            padding: 20px; 
-            text-align: center; 
-            margin-bottom: 20px;
-            border-radius: 8px;
-          }
-          .content { 
-            padding: 20px; 
-            background-color: #f9f9f9; 
-            border: 1px solid #ddd;
-            border-radius: 8px;
-          }
-          .subject-title {
-            font-size: 24px;
-            font-weight: bold;
-            color: #0A3359;
-            margin-bottom: 20px;
-            text-align: center;
-            border-bottom: 2px solid #0A3359;
-            padding-bottom: 10px;
-          }
-          .message-content { 
-            font-size: 16px;
-            line-height: 1.8;
-            margin: 20px 0;
-            padding: 15px;
-            background-color: white;
-            border-radius: 5px;
-            border-left: 4px solid #0A3359;
-          }
-          .image-container {
-            text-align: center;
-            margin: 20px 0;
-          }
-          .footer { 
-            margin-top: 30px; 
-            text-align: center; 
-            font-size: 12px; 
-            color: #666;
-            border-top: 1px solid #ddd;
-            padding-top: 15px;
-          }
-          @media print {
-            body { margin: 0; }
-            .no-print { display: none; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>📢 AVISO</h1>
-        </div>
-        <div class="content">
-          <div class="subject-title">${subject}</div>
-          <div class="message-content">
-            ${messageBody.replace(/\n/g, '<br>')}
-          </div>
-          ${imageContent}
-        </div>
-        <div class="footer">
-          <p><strong>Fecha y hora de generación:</strong> ${new Date().toLocaleString()}</p>
-        </div>
-      </body>
-      </html>
-    `;
-
-    // Crear ventana para imprimir
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-    
-    // Si hay imagen, esperar a que se cargue antes de imprimir
-    if (isImage) {
-      printWindow.onload = () => {
-        setTimeout(() => {
-          printWindow.focus();
-          printWindow.print();
-          printWindow.close();
-        }, 1000); // Dar tiempo para que la imagen se cargue
-      };
-    } else {
-      printWindow.focus();
-      printWindow.print();
-      printWindow.close();
-    }
-
-    // No mostrar alert aquí, se manejará en handleSend
-  };
-
   // Función para enviar emails en segundo plano
   const sendEmailInBackground = async (formData) => {
     try {
@@ -316,265 +218,99 @@ function EditMessage() {
       throw error;
     }
   };
-const saveCitation = async (formData) => {
-  let res = [];
-  if(remitentType === 'secretary') {
-    for (const item of selectedIds) {
-      const payload = {
-        category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
-        secretary_id: 1,
-        teacher_id: item,
-        subject,
-        body: messageBody,
-        status: 'Enviado',
-        priority: priority || 1,
-        meeting_datetime: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
-        attendance_status: messageType === 'citacion' ? (confirmAttendance ? 'Pendiente' : null) : null,
-        attachment: formData.get('attachmentUrl') ?? null,
-      };
-      console.log("Borrame saveCitation: ln 333: ", payload);
 
-      try {
-        const response = await fetch('http://localhost:8080/api/communication', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
+  const handleSendMessage = async () => {
+  if (!validateForm()) return;
 
-        if (!response.ok) throw new Error('Error al guardar el mensaje');
-        const data = await response.json(); // 👈 Aquí extraes el contenido JSON
-        console.log("ID de la comunicación:", data.id);
-        res.push(data.id); // 👈 Aquí guardas el ID de la comunicación
-        
-      } catch (error) {
-        console.error('Error al guardar el mensaje:', error);
-        alert(`❌ Error al guardar el mensaje: ${error.message}`);
-      }
-    }
-    if(selectedIds.length > 0) {
-      formData.set('comunitacionsIds', JSON.stringify(res));
-      formData.set('sendTo', JSON.stringify('profesor'));
-      await sendEmailInBackground(formData);
-    }
-  }else{
-    for (const item of selectedIdsTutors) {
-      const payload = {
-        category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
-        secretary_id: null,
-        teacher_id: 6,
-        subject,
-        body: messageBody,
-        status: 'Enviado',
-        priority: priority || 1,
-        meeting_datetime: null,
-        attendance_status: null,
-        attachment: formData.get('attachmentUrl') ?? null,
-      };
-      console.log("Borrame saveCitation: ln 333: ", payload);
+  setIsSending(true);
 
-      try {
-        const response = await fetch('http://localhost:8080/api/communication', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) throw new Error('Error al guardar el mensaje');
-        const data = await response.json(); // 👈 Aquí extraes el contenido JSON
-        console.log("ID de la comunicación:", data.id);
-        //res.push(data.id); // 👈 Aquí guardas el ID de la comunicación
-        const tutorCommRes = await fetch('http://localhost:8080/api/tutors-communications', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                tutor_id: item,
-                communication_id: data.id,
-                date_confirmed: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
-              }),
-            });
-            if (!tutorCommRes.ok) throw new Error('Error al guardar la comunicación del estudiante');
-            const datatutor = await tutorCommRes.json();
-        console.log("ID de la comunicación del tutor:", datatutor.communication_id, datatutor);
-            res.push(datatutor.communication_id);
-      } catch (error) {
-        console.error('Error al guardar el mensaje:', error);
-        alert(`❌ Error al guardar el mensaje: ${error.message}`);
-      }
-    }
-    console.log("Borrame:generateEmailContent ln 7 ", res);
-    if(selectedIdsTutors.length > 0) {
-      formData.set('selectedEmails', JSON.stringify(selectedEmailsTutors));
-      formData.set('selectedIds', JSON.stringify(selectedIdsTutors));
-      formData.set('comunitacionsIds', JSON.stringify(res));
-      formData.set('sendTo', JSON.stringify('tutor'));
-      await sendEmailInBackground(formData);
-    }
-    res = [];
-    for (const item of selectedIdsStudents) {
-      const payload = {
-        category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
-        secretary_id: null,
-        teacher_id: 6,
-        subject,
-        body: messageBody,
-        status: 'Enviado',
-        priority: priority || 1,
-        meeting_datetime: null,
-        attendance_status: null,
-        attachment: formData.get('attachmentUrl') ?? null,
-      };
-      console.log("Borrame saveCitation: ln 333: ", payload);
-
-      try {
-        const response = await fetch('http://localhost:8080/api/communication', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) throw new Error('Error al guardar el mensaje');
-        const data = await response.json(); // 👈 Aquí extraes el contenido JSON
-        console.log("ID de la comunicación:", data.id);
-        //res.push(data.id); // 👈 Aquí guardas el ID de la comunicación
-        const studentCommRes = await fetch('http://localhost:8080/api/students-communications', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                student_id: item,
-                communication_id: data.id,
-                date_confirmed: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
-              }),
-            });
-            if (!studentCommRes.ok) throw new Error('Error al guardar la comunicación del estudiante');
-            const datastudent = await studentCommRes.json();
-        console.log("ID de la comunicación del tutor:", datastudent.communication_id, datastudent);
-            res.push(datastudent.communication_id);
-      } catch (error) {
-        console.error('Error al guardar el mensaje:', error);
-        alert(`❌ Error al guardar el mensaje: ${error.message}`);
-      }
-    }
-    console.log("Borrame:generateEmailContent ln 7 ", res);
-    if(selectedIdsStudents.length > 0) {
-      formData.set('selectedEmails', JSON.stringify(selectedEmailsStudents));
-      formData.set('selectedIds', JSON.stringify(selectedIdsStudents));
-      formData.set('comunitacionsIds', JSON.stringify(res));
-      formData.set('sendTo', JSON.stringify('estudiante'));
-      await sendEmailInBackground(formData);
-    }
-  }
-  return res;
-};
-
-  // Handler para enviar el email o imprimir según el tipo
-  const handleSend = async () => {
-    console.log('handleSend llamado con:', {
-      messageType,
-      selectedEmails: selectedEmails.length,
+  try {
+    // 1. Actualizar el estado a "Enviado" en la base de datos
+    const payload = {
+      category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
+      secretary_id: 1,
+      teacher_id: null,
       subject,
-      messageBody
+      body: messageBody,
+      status: 'Enviado',
+      priority: priority || 1,
+      attachment: selectedFile ? selectedFile.name : null,
+      meeting_datetime: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
+      attendance_status: messageType === 'citacion' ? (confirmAttendance ? 'Pendiente' : null) : null,
+    };
+
+    const updateResponse = await fetch(`http://localhost:8080/api/communication/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     });
 
-    if (!validateForm()) {
-      console.log('Validación falló, deteniendo envío');
-      return;
+    if (!updateResponse.ok) throw new Error('Error al actualizar el estado del mensaje');
+
+    // 2. Obtener emails de los destinatarios actuales
+    const currentEmails = recipients.map(recipient => {
+      const recipientData = recipient[recipient.recipientType];
+      return recipientData?.email;
+    }).filter(email => email); // Filtrar emails válidos
+
+    if (currentEmails.length === 0) {
+      throw new Error('No se encontraron destinatarios para este mensaje');
     }
 
-    // Si es tipo aviso, imprimir en lugar de enviar
-    if (messageType === 'aviso') {
-      handlePrint();
-      // Mostrar mensaje de éxito para aviso y redirigir
-      setTimeout(() => {
-        alert('✅ Documento de aviso generado correctamente');
-        navigate('/secretary');
-      }, 500);
-      return;
-    }
+    // 3. Preparar y enviar los emails
+    const formData = new FormData();
+    formData.append('messageType', messageType);
+    formData.append('subject', subject);
+    formData.append('messageBody', messageBody);
+    formData.append('selectedDate', selectedDate);
+    formData.append('selectedTime', selectedTime);
+    formData.append('confirmAttendance', confirmAttendance);
+    formData.append('comunitacionsIds', JSON.stringify([id]));
+    formData.append('sendTo', JSON.stringify('profesor')); // Ajustar según el tipo de destinatario
+    formData.append('selectedEmails', JSON.stringify(currentEmails));
 
-    // Para citación y mensaje, enviar por email
-    setIsSending(true);
+    // Enviar emails
+    await sendEmailInBackground(formData);
 
-    try {
-      const formData = await prepareFormData();
-      
-      console.log('Iniciando envío de mensaje:', {
-        recipientType,
-        selectedEmails,
-        selectedIds,
-        messageType,
-        subject,
-        messageBody,
-        confirmAttendance,
-        selectedFile: selectedFile ? selectedFile.name : null,
-        selectedDate,
-        selectedTime, 
-        attachmentUrl,
-      });
-      for (let pair of formData.entries()) {
-        console.log(`${pair[0]}: ${pair[1]}`);
+    alert('✅ Mensaje enviado exitosamente y estado actualizado a "Enviado"');
+    navigate("/secretary");
+
+  } catch (error) {
+    console.error('Error al enviar el mensaje:', error);
+    alert(`❌ Error al enviar el mensaje: ${error.message}`);
+  } finally {
+    setIsSending(false);
+  }
+};
+
+  const handleUpdate = async () => {
+      if (!validateForm()) return;
+      const payload = {
+          category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
+          secretary_id: 1,
+          teacher_id: null,
+          subject,
+          body: messageBody,
+          status: 'Guardado',
+          priority: priority || 1,
+          attachment: selectedFile ? selectedFile.name : null,
+          meeting_datetime: null,
+          attendance_status: null,
+      };
+
+      try {
+          const response = await fetch(`http://localhost:8080/api/communication/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          });
+          if (!response.ok) throw new Error('Error al actualizar el mensaje');
+          alert('Mensaje actualizado exitosamente');
+          navigate("/secretary");
+      } catch (error) {
+          alert('Error al actualizar el mensaje: ' + error.message);
       }
-      let comunitacionsIds = [];
-      if(messageType === 'citacion') {
-        comunitacionsIds = await saveCitation(formData);
-      }else{
-        await sendEmailInBackground(formData);
-      }
-      // Enviar emails
-      
-      
-      // Mostrar mensaje de éxito único y redirigir
-      alert(`✅ Correos enviados exitosamente!\n\nDestinatarios: ${selectedEmails.length}\nTipo: ${messageType}`);
-      
-      // Limpiar el formulario
-      setMessageType('');
-      setSubject('');
-      setMessageBody('');
-      setConfirmAttendance(false);
-      setSelectedFile(null);
-      setSelectedDate('');
-      setSelectedTime('');
-
-      // Redirigir a /secretary después de un breve delay
-      setTimeout(() => {
-        navigate('/secretary');
-      }, 1000);
-
-    } catch (error) {
-      console.error('Error al enviar:', error);
-      alert(`❌ Error al enviar correos: ${error.message}`);
-    } finally {
-      setIsSending(false);
-    }
   };
-  
-    const handleUpdate = async () => {
-        if (!validateForm()) return;
-        const payload = {
-            category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
-            secretary_id: 1,
-            teacher_id: null,
-            subject,
-            body: messageBody,
-            status: 'Guardado',
-            priority: priority || 1,
-            attachment: selectedFile ? selectedFile.name : null,
-            meeting_datetime: null,
-            attendance_status: null,
-        };
-
-        try {
-            const response = await fetch(`http://localhost:8080/api/communication/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-            });
-            if (!response.ok) throw new Error('Error al actualizar el mensaje');
-            alert('Mensaje actualizado exitosamente');
-            navigate("/secretary");
-        } catch (error) {
-            alert('Error al actualizar el mensaje: ' + error.message);
-        }
-    };
 
   return (
     <Paper sx={{ p: 3, m: 2, borderRadius: '8px' }}>
@@ -593,21 +329,44 @@ const saveCitation = async (formData) => {
         <Box sx={modalStyle}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, pb: 2, borderBottom: '1px solid #eee' }}>
             <Typography id="selected-emails-modal-title" variant="h6" component="h2">
-              Lista de Destinatarios Seleccionados
+              Destinatarios del Mensaje
             </Typography>
             <IconButton onClick={handleCloseModal} size="small">
               X
             </IconButton>
           </Box>
-          <Box id="selected-emails-modal-description" sx={{ maxHeight: 350, overflowY: 'auto', pr: 1 /* Add padding to right for scrollbar */ }}>
-            {selectedEmails.length > 0 ? (
-              selectedEmails.map((email, index) => (
-                <Paper key={index} elevation={1} sx={{ mb: 1, p: 1.5, borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
-                  <Typography sx={{ fontSize: '1rem', color: '#333' }}>{email}</Typography>
-                </Paper>
-              ))
+          <Box id="selected-emails-modal-description" sx={{ maxHeight: 350, overflowY: 'auto', pr: 1 }}>
+            {loadingRecipients ? (
+              <Typography sx={{ textAlign: 'center' }}>Cargando destinatarios...</Typography>
+            ) : recipients.length > 0 ? (
+              recipients.map((recipient, index) => {
+                // Determinar qué campo usar según el tipo de destinatario
+                const recipientData = recipient[recipient.recipientType];
+                const recipientTypeLabel = {
+                  teachers: 'Profesor',
+                  students: 'Estudiante', 
+                  tutors: 'Tutor'
+                };
+                
+                return (
+                  <Paper key={index} elevation={1} sx={{ mb: 1, p: 1.5, borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
+                    <Typography sx={{ fontSize: '1rem', color: '#333', fontWeight: 'bold' }}>
+                      {recipientData?.names} {recipientData?.last_names}
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.9rem', color: '#666' }}>
+                      {recipientData?.email}
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.8rem', color: '#2196f3', fontWeight: 'bold' }}>
+                      Tipo: {recipientTypeLabel[recipient.recipientType]}
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.8rem', color: recipient.confirmed ? '#2e7d32' : '#d32f2f' }}>
+                      Estado: {recipient.confirmed ? 'Confirmado' : 'Pendiente'}
+                    </Typography>
+                  </Paper>
+                );
+              })
             ) : (
-              <Typography sx={{ textAlign: 'center', color: '#555' }}>No hay destinatarios seleccionados.</Typography>
+              <Typography sx={{ textAlign: 'center', color: '#555' }}>No hay destinatarios para este mensaje.</Typography>
             )}
           </Box>
         </Box>
@@ -650,6 +409,23 @@ const saveCitation = async (formData) => {
             <MenuItem value="mensaje"> Mensaje</MenuItem>
           </Select>
         </FormControl>
+        <Grid item>
+  <Button 
+    variant="outlined" 
+    onClick={handleOpenModal}
+    sx={{ 
+      backgroundColor: '#0A3359', 
+      color: 'white',
+      '&:hover': { 
+        backgroundColor: '#0A3359', 
+        color: 'white' 
+      }
+    }}
+    fullWidth
+  >
+    Ver Destinatarios ({recipients.length})
+  </Button>
+</Grid>
         <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, justifyContent: 'flex-end' }}> {/* Added justifyContent: 'flex-end' */}
           <Button component="label" size="medium" sx={{
             paddingInline: 5,
@@ -898,7 +674,7 @@ const saveCitation = async (formData) => {
           <Grid item>
             <Button
               variant="contained"
-              onClick={handleSend}
+              onClick={handleSendMessage}
               disabled={isSending}
               sx={{
                 backgroundColor: messageType === 'aviso' ? '#FF6B35' : '#2C965A',

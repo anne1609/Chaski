@@ -56,6 +56,32 @@ module.exports = {
             return res.status(500).json({ message: 'Error interno del servidor' });
         }
     },
+
+    async getStudentCommunicationByIdCommunication(req, res) {
+        const {communication_id} = req.params;
+        try {
+            const studentCommunications = await Students_Communications.findAll({
+                where: {
+                    communication_id,
+                },
+                include: [
+                    {
+                        model: Students,
+                        as: 'students',
+                        attributes: ['names', 'last_names', 'email'],
+                    },
+                ],
+            });
+            if (!studentCommunications) {
+                return res.status(404).json({ message: 'No se encontraron comunicaciones de estudiantes para esta comunicación' });
+            }
+            return res.status(200).json(studentCommunications);
+        } catch (error) {
+            console.error('Error al obtener las comunicaciones del estudiante por ID de comunicación:', error);
+            return res.status(500).json({ message: 'Error interno del servidor' });
+        }
+    },
+
     async createStudentCommunication(req, res) {
         const {student_id, communication_id,  meeting_datetime,} = req.body;
         try {
