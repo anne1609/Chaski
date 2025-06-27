@@ -13,7 +13,7 @@ import RejectionPage from '../components/shared/RejectionPage'; // Assuming this
 import TeacherAttendanceStatus from '../components/teacher/TeacherAttendanceStatus';
 import EditMessage from '../components/shared/EditMessage';
 import TeacherCommunications from '../components/teacher/TeacherCommunications';
-
+import DetailsPage from '../components/shared/DetailsPage';
 function AppRoutes() {
   return (
     <Routes>
@@ -34,6 +34,14 @@ function AppRoutes() {
             <Teacher />
           </ProtectedRoute>
         } 
+      />
+      <Route 
+        path="/secretary/communication/:communicationId"
+        element={
+          <ProtectedRoute requiredRole="secretary">
+            <DetailsPage />
+          </ProtectedRoute>
+        }
       />
       <Route 
         path="/confirmation-accepted" 

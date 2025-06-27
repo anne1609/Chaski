@@ -8,7 +8,7 @@ module.exports = {
                     {
                         model: Secretaries,
                         as: 'secretaries',
-                        attributes: ['id', 'names', 'last_names'],
+                        attributes: ['id', 'names', 'last_names','email'],
                     },
                     {
                         model: Teachers,
@@ -40,12 +40,12 @@ module.exports = {
                     {
                         model: Secretaries,
                         as: 'secretaries',
-                        attributes: ['id', 'names', 'last_names'],
+                        attributes: ['id', 'names', 'last_names','email'],
                     },
                     {
                         model: Teachers,
                         as: 'teachers',
-                        attributes: ['id', 'names', 'last_names'],
+                        attributes: ['id', 'names', 'last_names','email'],
                     },
                     {
                         model: Categories,
