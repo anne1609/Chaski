@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Box, Button, Tab } from '@mui/material';
 import { useAuth } from '../../hooks/useAuth';
+import AttendanceStatusDialog from './AttendanceStatusDialog';
 
 function CommunicationsStatus({ role }) {
   const { user } = useAuth();
   const [communications, setCommunications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [attendanceDialog, setAttendanceDialog] = useState({ open: false, status: '' });
 
   useEffect(() => {
     const fetchCommunications = async () => {
@@ -198,15 +200,26 @@ function CommunicationsStatus({ role }) {
                         Reenviar
                       </Button>
                     )} 
-                    <Button
-                      variant="contained"
-                      color="info"
-                      component={Link}
-                      to={`/secretary/attendance/${communication.id}`}
-                      sx={{ mr: 1 }}
-                    >
-              Ver asistencia
-            </Button>  
+                    {role === 'teacher' ? (
+                      <Button
+                        variant="contained"
+                        color="info"
+                        sx={{ mr: 1 }}
+                        onClick={() => setAttendanceDialog({ open: true, status: communication.attendance_status })}
+                      >
+                        Ver asistencia
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="contained"
+                        color="info"
+                        component={Link}
+                        to={`/secretary/attendance/${communication.id}`}
+                        sx={{ mr: 1 }}
+                      >
+                        Ver asistencia
+                      </Button>
+                    )}  
                     <Button
                       variant="contained"
                       color="tertiary"
@@ -231,6 +244,11 @@ function CommunicationsStatus({ role }) {
           </Table>
         </TableContainer>
       )}
+      <AttendanceStatusDialog
+        open={attendanceDialog.open}
+        status={attendanceDialog.status}
+        onClose={() => setAttendanceDialog({ open: false, status: '' })}
+      />
     </Box>
   );
 }
