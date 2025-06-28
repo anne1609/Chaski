@@ -3,14 +3,14 @@ import { Link } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Box, Button, Tab } from '@mui/material';
 import { useAuth } from '../../hooks/useAuth';
 import AttendanceStatusDialog from './AttendanceStatusDialog';
-
+import { Snackbar, Alert } from '@mui/material';
 function CommunicationsStatus({ role }) {
   const { user } = useAuth();
   const [communications, setCommunications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [attendanceDialog, setAttendanceDialog] = useState({ open: false, status: '' });
-
+  const [successMessage, setSuccessMessage] = useState('');
   useEffect(() => {
     const fetchCommunications = async () => {
       try {
@@ -69,6 +69,8 @@ function CommunicationsStatus({ role }) {
         const result = await response.json();
 
         if (response.ok) {
+          setSuccessMessage('Mensaje reenviado con éxito');
+          setTimeout(() => setSuccessMessage(''), 3000);
           // Solo retornar el resultado, no mostrar alert aquí
           return result;
         } else {
@@ -119,6 +121,16 @@ function CommunicationsStatus({ role }) {
 
   return (
     <Box sx={{ mt: 3 }}>
+      <Snackbar
+    open={!!successMessage}
+    autoHideDuration={3000}
+    onClose={() => setSuccessMessage('')}
+    anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+  >
+    <Alert onClose={() => setSuccessMessage('')} severity="info" sx={{ width: '100%' }}>
+      {successMessage}
+    </Alert>
+  </Snackbar>
       {communications.length === 0 ? (
         <div>No hay comunicaciones disponibles.</div>
       ) : (
