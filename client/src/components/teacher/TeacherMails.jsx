@@ -295,7 +295,6 @@ function TeacherMails() {
   const handleComposeMessage = () => {
     const allSelectedEmails = [...selectedStudentEmails, ...selectedTutorEmails];
     const selectedStudents = allStudentsData.filter(student => selectedStudentEmails.has(student.email));
-    
     // Filtrar tutores únicos por ID para evitar duplicados en el envío
     const selectedTutorsWithDuplicates = allTutorsData.filter(tutor => selectedTutorEmails.has(tutor.email));
     const uniqueTutors = selectedTutorsWithDuplicates.reduce((acc, tutor) => {
@@ -304,15 +303,26 @@ function TeacherMails() {
       }
       return acc;
     }, []);
-    
     const selectedIds = [...selectedStudents.map(s => s.id), ...uniqueTutors.map(t => t.id)];
-    
+
+    // Lógica para recipientType
+    let recipientType = '';
+    if (selectedStudents.length > 0 && uniqueTutors.length > 0) {
+      recipientType = 'Estudiantes y Tutores';
+    } else if (selectedStudents.length > 0) {
+      recipientType = selectedStudents.length === 1 ? 'Estudiante' : 'Estudiantes';
+    } else if (uniqueTutors.length > 0) {
+      recipientType = uniqueTutors.length === 1 ? 'Tutor' : 'Tutores';
+    } else {
+      recipientType = 'Desconocido';
+    }
+
     navigate('/teacher/compose-message', {
       state: {
         selectedEmails: allSelectedEmails,
         selectedIds: selectedIds,
-        recipientType: 'Estudiantes y Tutores',
-        selectedIdsTutors:  uniqueTutors.map(t => t.id),
+        recipientType: recipientType,
+        selectedIdsTutors: uniqueTutors.map(t => t.id),
         remitentType: 'teacher',
         selectedIdsStudents: selectedStudents.map(s => s.id),
         selectedEmailsTutors: uniqueTutors.map(t => t.email),
