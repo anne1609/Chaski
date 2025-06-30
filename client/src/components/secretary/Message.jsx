@@ -415,13 +415,13 @@ const saveCitation = async (formData) => {
       const payload = {
         category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
         secretary_id: null,
-        teacher_id: 6,
+        teacher_id: user ? user.id : null, // Usar el id real del profesor logueado
         subject,
         body: messageBody,
         status: 'Enviado',
         priority: priority || 1,
-        meeting_datetime: null,
-        attendance_status: null,
+        meeting_datetime: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
+        attendance_status: messageType === 'citacion' ? (confirmAttendance ? 'Pendiente' : null) : null,
         attachment: formData.get('attachmentUrl') ?? null,
       };
       console.log("Borrame saveCitation: ln 333: ", payload);
@@ -434,9 +434,8 @@ const saveCitation = async (formData) => {
         });
 
         if (!response.ok) throw new Error('Error al guardar el mensaje');
-        const data = await response.json(); // 👈 Aquí extraes el contenido JSON
+        const data = await response.json();
         console.log("ID de la comunicación:", data.id);
-        //res.push(data.id); // 👈 Aquí guardas el ID de la comunicación
         const studentCommRes = await fetch('http://localhost:8080/api/students-communications', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -448,7 +447,7 @@ const saveCitation = async (formData) => {
             });
             if (!studentCommRes.ok) throw new Error('Error al guardar la comunicación del estudiante');
             const datastudent = await studentCommRes.json();
-        console.log("ID de la comunicación del tutor:", datastudent.communication_id, datastudent);
+        console.log("ID de la comunicación del estudiante:", datastudent.communication_id, datastudent);
             res.push(datastudent.communication_id);
       } catch (error) {
         console.error('Error al guardar el mensaje:', error);
@@ -514,7 +513,7 @@ const saveCitation = async (formData) => {
       for (let pair of formData.entries()) {
         console.log(`${pair[0]}: ${pair[1]}`);
       }
-      if(messageType === 'citacion') {
+      if(messageType === 'citacion' || (messageType === 'mensaje' && remitentType === 'teacher')) {
         await saveCitation(formData);
       }else{
         await sendEmailInBackground(formData);

@@ -212,7 +212,7 @@ function CommunicationsStatus({ role }) {
                         Reenviar
                       </Button>
                     )} 
-                    {role === 'teacher' ? (
+                    {role === 'teacher' && communication.category.name === 'citacion' ? (
                       <Button
                         variant="contained"
                         color="info"
@@ -221,7 +221,8 @@ function CommunicationsStatus({ role }) {
                       >
                         Ver asistencia
                       </Button>
-                    ) : (
+                    ) : null}
+                    {role !== 'teacher' ? (
                       <Button
                         variant="contained"
                         color="info"
@@ -231,7 +232,7 @@ function CommunicationsStatus({ role }) {
                       >
                         Ver asistencia
                       </Button>
-                    )}  
+                    ) : null}  
                     <Button
                       variant="contained"
                       color="tertiary"
