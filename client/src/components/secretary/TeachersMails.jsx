@@ -378,7 +378,9 @@ function TeachersMails() {
                   </TableCell>
                   <TableCell>{teacher.email}</TableCell>
                   <TableCell>
-                    {(teacher.subjects && teacher.subjects.length > 0) ? teacher.subjects.join(', ') : 'N/A'}
+                    {(teacher.subjects && teacher.subjects.length > 0)
+                      ? Array.from(new Set(teacher.subjects.map(s => s.trim().toLowerCase()))).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')
+                      : 'N/A'}
                   </TableCell>
                 </TableRow>
               ))

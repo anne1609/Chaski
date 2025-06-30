@@ -20,17 +20,18 @@ module.exports = {
       { subject_id: 16, teacher_id: 13 } // Lenguaje para tercero de primaria - Valeria Paredes
     ], {});
 
-    // Asignar Robótica Básica al profesor demo si ambos existen
-    const [robotica] = await queryInterface.sequelize.query(
-      `SELECT id FROM subjects WHERE name ILIKE '%robotica%' OR name ILIKE '%robótica%' ORDER BY id DESC LIMIT 1`
+    // Asignar Robótica de todos los grados de secundaria al profesor demo
+    const [roboticaSubjects] = await queryInterface.sequelize.query(
+      `SELECT id FROM subjects WHERE name = 'Robótica' AND grade_id BETWEEN 7 AND 11`
     );
     const [demoTeacher] = await queryInterface.sequelize.query(
       `SELECT id FROM teachers WHERE email = 'profesor@mail.com'`
     );
-    if (robotica.length > 0 && demoTeacher.length > 0) {
-      await queryInterface.bulkInsert('subjects_teachers', [
-        { subject_id: robotica[0].id, teacher_id: demoTeacher[0].id }
-      ], {});
+    if (roboticaSubjects.length > 0 && demoTeacher.length > 0) {
+      await queryInterface.bulkInsert('subjects_teachers',
+        roboticaSubjects.map(s => ({ subject_id: s.id, teacher_id: demoTeacher[0].id })),
+        {}
+      );
     }
   },
 

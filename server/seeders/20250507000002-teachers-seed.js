@@ -107,6 +107,14 @@ module.exports = {
         email: 'valeria.paredes@chaski.edu',
         phone_number: '999888333',
         specialization: 'Lenguaje',
+      },
+      {
+        id: 99,
+        names: 'Profesor',
+        last_names: 'Demo',
+        email: 'profesor@mail.com',
+        phone_number: '999000999',
+        specialization: 'Robótica',
       }
     ], {});
   },

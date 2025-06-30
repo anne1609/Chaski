@@ -85,14 +85,12 @@ module.exports = {
       { name: 'Matemáticas', description: 'Matemáticas para segundo de secundaria', grade_id: 8, teacher_id: 8 },
       { name: 'Ciencias', description: 'Ciencias para segundo de secundaria', grade_id: 8, teacher_id: 9 },
       { name: 'Lenguaje', description: 'Lenguaje para segundo de secundaria', grade_id: 8, teacher_id: 10 },
-      {
-        name: 'Robótica Básica',
-        description: 'Introducción a la robótica y programación básica',
-        grade_id: 1, // Puedes cambiar el grado si lo deseas
-        teacher_id: 1 // Asignar temporalmente el primer profesor para cumplir NOT NULL
-      },
-      // Mover la inserción de Robótica a un seeder posterior a teachers y demo users
-      // Elimina la inserción de Robótica de este seeder para evitar error de clave foránea
+      // Materias de Robótica para todos los grados de secundaria (7 a 11)
+      { name: 'Robótica', description: 'Robótica para primero de secundaria', grade_id: 7, teacher_id: 99 },
+      { name: 'Robótica', description: 'Robótica para segundo de secundaria', grade_id: 8, teacher_id: 99 },
+      { name: 'Robótica', description: 'Robótica para tercero de secundaria', grade_id: 9, teacher_id: 99 },
+      { name: 'Robótica', description: 'Robótica para cuarto de secundaria', grade_id: 10, teacher_id: 99 },
+      { name: 'Robótica', description: 'Robótica para quinto de secundaria', grade_id: 11, teacher_id: 99 },
     ], {});
   },
 

@@ -68,6 +68,12 @@ module.exports = {
         teacher_id: 13, // Profesor de Lenguaje para Tercero de Primaria
         grade_id: 3,    // Tercero de Primaria
       },
+      // Asignar profesor demo a todos los grados de secundaria (7 a 11)
+      { teacher_id: 99, grade_id: 7 },
+      { teacher_id: 99, grade_id: 8 },
+      { teacher_id: 99, grade_id: 9 },
+      { teacher_id: 99, grade_id: 10 },
+      { teacher_id: 99, grade_id: 11 },
       // Solo teacher_id del 1 al 10, no usar 99 (demo)
     ], {});
   },
