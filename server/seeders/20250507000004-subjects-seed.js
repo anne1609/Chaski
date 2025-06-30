@@ -64,7 +64,29 @@ module.exports = {
         description: 'Desarrollo deportivo y preparación física',
         grade_id: 11, // Quinto de Secundaria
         teacher_id: 5, // Carlos Sánchez
-      }
+      },
+      // Segundo de Primaria
+      { name: 'Matemáticas', description: 'Matemáticas para segundo de primaria', grade_id: 2, teacher_id: 6 },
+      { name: 'Ciencias', description: 'Ciencias para segundo de primaria', grade_id: 2, teacher_id: 7 },
+      { name: 'Lenguaje', description: 'Lenguaje para segundo de primaria', grade_id: 2, teacher_id: 8 },
+      // Tercero de Primaria
+      { name: 'Matemáticas', description: 'Matemáticas para tercero de primaria', grade_id: 3, teacher_id: 11 },
+      { name: 'Ciencias', description: 'Ciencias para tercero de primaria', grade_id: 3, teacher_id: 12 },
+      { name: 'Lenguaje', description: 'Lenguaje para tercero de primaria', grade_id: 3, teacher_id: 13 },
+      // Quinto de Primaria (todos con el mismo profesor asignado)
+      { name: 'Matemáticas', description: 'Matemáticas para quinto de primaria', grade_id: 5, teacher_id: 1 },
+      { name: 'Ciencias', description: 'Ciencias para quinto de primaria', grade_id: 5, teacher_id: 1 },
+      { name: 'Lenguaje', description: 'Lenguaje para quinto de primaria', grade_id: 5, teacher_id: 1 },
+      // Sexto de Primaria
+      { name: 'Matemáticas', description: 'Matemáticas para sexto de primaria', grade_id: 6, teacher_id: 10 },
+      { name: 'Ciencias', description: 'Ciencias para sexto de primaria', grade_id: 6, teacher_id: 6 },
+      { name: 'Lenguaje', description: 'Lenguaje para sexto de primaria', grade_id: 6, teacher_id: 7 },
+      // Segundo de Secundaria
+      { name: 'Matemáticas', description: 'Matemáticas para segundo de secundaria', grade_id: 8, teacher_id: 8 },
+      { name: 'Ciencias', description: 'Ciencias para segundo de secundaria', grade_id: 8, teacher_id: 9 },
+      { name: 'Lenguaje', description: 'Lenguaje para segundo de secundaria', grade_id: 8, teacher_id: 10 },
+      // Mover la inserción de Robótica a un seeder posterior a teachers y demo users
+      // Elimina la inserción de Robótica de este seeder para evitar error de clave foránea
     ], {});
   },
 

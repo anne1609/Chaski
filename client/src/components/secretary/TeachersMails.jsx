@@ -118,7 +118,7 @@ function TeachersMails() {
 
   const handleSelectAllChange = useCallback((event) => {
     const isChecked = event.target.checked;
-    setSelectedEmails(prevSelectedEmails => {
+    setSelectedEmails(() => {
       const newSelectedEmails = new Set();
       if (isChecked) {
         filteredTeachers.forEach(teacher => newSelectedEmails.add(teacher.email));
@@ -132,7 +132,6 @@ function TeachersMails() {
   }, [filteredTeachers, selectedEmails]);
 
   const allFilteredSelected = filteredTeachers.length > 0 && numSelectedInFiltered === filteredTeachers.length;
-  const someFilteredSelected = filteredTeachers.length > 0 && numSelectedInFiltered > 0 && numSelectedInFiltered < filteredTeachers.length;
   const selectedTeachers = allTeachers.filter(teacher => selectedEmails.has(teacher.email));
   const selectedTeachersIds = selectedTeachers.map(teacher => teacher.id);
   const handleComposeMessage = () => {

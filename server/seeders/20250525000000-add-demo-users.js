@@ -34,6 +34,7 @@ module.exports = {
 
     if (existingTeacher.length === 0) {
       await queryInterface.bulkInsert('teachers', [{
+        id: 99, // ID explícito para el profesor demo
         names: 'Profesor',
         last_names: 'Demo',
         email: 'profesor@mail.com',
@@ -50,36 +51,22 @@ module.exports = {
       );
       const teacherId = teacherResult[0].id;
 
-      // Assign 4 subjects to the demo teacher
-      // We'll assign subjects that exist (IDs 1, 2, 3, 4 from the subjects seed)
-      await queryInterface.bulkInsert('subjects_teachers', [
-        {
-          subject_id: 1, // Matemáticas Básicas
-          teacher_id: teacherId
-        },
-        {
-          subject_id: 2, // Lenguaje y Comunicación
-          teacher_id: teacherId
-        },
-        {
-          subject_id: 3, // Ciencias Naturales
-          teacher_id: teacherId
-        },
-        {
-          subject_id: 4, // Historia del Perú
-          teacher_id: teacherId
-        },
-       {
-          subject_id: 5, // Historia del Perú
-          teacher_id: teacherId
-        }, {
-          subject_id: 6, // Historia del Perú
-          teacher_id: teacherId
-        }, {
-          subject_id: 7, // Historia del Perú
-          teacher_id: teacherId
-        },
-      ]);
+      // Asignar solo la materia Robótica al profesor demo (id 99)
+      // Eliminar cualquier asignación previa de materias al profesor demo antes de asignar Robótica
+      await queryInterface.bulkDelete('subjects_teachers', { teacher_id: teacherId }, {});
+      // Obtener el id de la materia Robótica (insertada en el seeder posterior)
+      const [robotica] = await queryInterface.sequelize.query(
+        `SELECT id FROM subjects WHERE name ILIKE '%robotica%' OR name ILIKE '%robótica%' ORDER BY id DESC LIMIT 1`
+      );
+      const roboticaId = robotica[0]?.id;
+      if (roboticaId) {
+        await queryInterface.bulkInsert('subjects_teachers', [
+          {
+            subject_id: roboticaId,
+            teacher_id: teacherId
+          }
+        ]);
+      }
     } else {
       // Update existing teacher password
       await queryInterface.sequelize.query(

@@ -51,6 +51,66 @@ module.exports = {
         last_names: 'Herrera',
         email: 'gabriel.herrera@gmail.com',
         phone_number: '987654328'
+      },
+      {
+        names: 'Esteban',
+        last_names: 'Salazar',
+        email: 'esteban.salazar@gmail.com',
+        phone_number: '987654329'
+      },
+      {
+        names: 'Rosa',
+        last_names: 'Vargas',
+        email: 'rosa.vargas@gmail.com',
+        phone_number: '987654330'
+      },
+      {
+        names: 'Mario',
+        last_names: 'Cáceres',
+        email: 'mario.caceres@gmail.com',
+        phone_number: '987654331'
+      },
+      {
+        names: 'Elena',
+        last_names: 'Mora',
+        email: 'elena.mora@gmail.com',
+        phone_number: '987654332'
+      },
+      {
+        names: 'Pablo',
+        last_names: 'Soto',
+        email: 'pablo.soto@gmail.com',
+        phone_number: '987654333'
+      },
+      {
+        names: 'Teresa',
+        last_names: 'Ríos',
+        email: 'teresa.rios@gmail.com',
+        phone_number: '987654334'
+      },
+      {
+        names: 'Raúl',
+        last_names: 'Guzmán',
+        email: 'raul.guzman@gmail.com',
+        phone_number: '987654335'
+      },
+      {
+        names: 'Lorena',
+        last_names: 'Peña',
+        email: 'lorena.pena@gmail.com',
+        phone_number: '987654336'
+      },
+      {
+        names: 'Hugo',
+        last_names: 'Navarro',
+        email: 'hugo.navarro@gmail.com',
+        phone_number: '987654337'
+      },
+      {
+        names: 'Marina',
+        last_names: 'Bravo',
+        email: 'marina.bravo@gmail.com',
+        phone_number: '987654338'
       }
     ], {});
   },
