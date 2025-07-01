@@ -292,255 +292,150 @@ function Message() {
       printWindow.print();
       printWindow.close();
     }
-
-    // No mostrar alert aquí, se manejará en handleSend
   };
 
   // Función para enviar emails en segundo plano
   const sendEmailInBackground = async (formData) => {
     try {
+      console.log('Enviando emails a:', formData.get('selectedEmails'));
       const response = await fetch('http://localhost:8080/api/send-email-queue', {
         method: 'POST',
         body: formData,
       });
 
       const result = await response.json();
+      console.log('Respuesta del servidor:', result);
 
       if (response.ok) {
-        // Solo retornar el resultado, no mostrar alert aquí
+        console.log('✅ Emails enviados correctamente');
         return result;
       } else {
         throw new Error(result.error || 'Error al enviar los correos');
       }
     } catch (error) {
-      console.error('Error al enviar correos en segundo plano:', error);
+      console.error('❌ Error al enviar correos:', error);
       throw error;
     }
   };
-const saveCitation = async (formData) => {
-  let res = [];
-  if(remitentType === 'secretary') {
-    for (const item of selectedIds) {
-      const payload = {
-        category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
-        secretary_id: 1,
-        teacher_id: item,
-        subject,
-        body: messageBody,
-        status: 'Enviado',
-        priority: priority || 1,
-        meeting_datetime: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
-        attendance_status: messageType === 'citacion' ? (confirmAttendance ? 'Pendiente' : null) : null,
-        attachment: formData.get('attachmentUrl') ?? null,
-      };
-      console.log("Borrame saveCitation: ln 333: ", payload);
 
-      try {
-        const response = await fetch('http://localhost:8080/api/communication', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) throw new Error('Error al guardar el mensaje');
-        const data = await response.json(); // 👈 Aquí extraes el contenido JSON
-        console.log("ID de la comunicación:", data.id);
-        res.push(data.id); // 👈 Aquí guardas el ID de la comunicación
-
-      } catch (error) {
-        console.error('Error al guardar el mensaje:', error);
-        alert(`❌ Error al guardar el mensaje: ${error.message}`);
-      }
-    }
-    if(selectedIds.length > 0) {
-      formData.set('comunitacionsIds', JSON.stringify(res));
-      formData.set('sendTo', JSON.stringify('profesor'));
-      await sendEmailInBackground(formData);
-    }
-  }else if(remitentType === 'teacher' && user) {
-    for (const item of selectedIdsTutors) {
-      const payload = {
-        category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
-        secretary_id: null,
-        teacher_id: user.id, // Asociar el mensaje con el id del profesor logueado
-        subject,
-        body: messageBody,
-        status: 'Enviado',
-        priority: priority || 1,
-        meeting_datetime: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
-        attendance_status: messageType === 'citacion' ? (confirmAttendance ? 'Pendiente' : null) : null,
-        attachment: formData.get('attachmentUrl') ?? null,
-      };
-      console.log("Borrame saveCitation: ln 333: ", payload);
-
-      try {
-        const response = await fetch('http://localhost:8080/api/communication', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) throw new Error('Error al guardar el mensaje');
-        const data = await response.json(); // 👈 Aquí extraes el contenido JSON
-        console.log("ID de la comunicación:", data.id);
-        //res.push(data.id); // 👈 Aquí guardas el ID de la comunicación
-        const tutorCommRes = await fetch('http://localhost:8080/api/tutors-communications', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                tutor_id: item,
-                communication_id: data.id,
-                meeting_datetime: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
-              }),
-            });
-            if (!tutorCommRes.ok) throw new Error('Error al guardar la comunicación del estudiante');
-            const datatutor = await tutorCommRes.json();
-        console.log("ID de la comunicación del tutor:", datatutor.communication_id, datatutor);
-            res.push(datatutor.communication_id);
-      } catch (error) {
-        console.error('Error al guardar el mensaje:', error);
-        alert(`❌ Error al guardar el mensaje: ${error.message}`);
-      }
-    }
-    console.log("Borrame:generateEmailContent ln 7 ", res);
-    if(selectedIdsTutors.length > 0) {
-      formData.set('selectedEmails', JSON.stringify(selectedEmailsTutors));
-      formData.set('selectedIds', JSON.stringify(selectedIdsTutors));
-      formData.set('comunitacionsIds', JSON.stringify(res));
-      formData.set('sendTo', JSON.stringify('tutor'));
-      await sendEmailInBackground(formData);
-    }
-    res = [];
-    for (const item of selectedIdsStudents) {
-      const payload = {
-        category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
-        secretary_id: null,
-        teacher_id: user ? user.id : null, // Usar el id real del profesor logueado
-        subject,
-        body: messageBody,
-        status: 'Enviado',
-        priority: priority || 1,
-        meeting_datetime: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
-        attendance_status: messageType === 'citacion' ? (confirmAttendance ? 'Pendiente' : null) : null,
-        attachment: formData.get('attachmentUrl') ?? null,
-      };
-      console.log("Borrame saveCitation: ln 333: ", payload);
-
-      try {
-        const response = await fetch('http://localhost:8080/api/communication', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) throw new Error('Error al guardar el mensaje');
-        const data = await response.json();
-        console.log("ID de la comunicación:", data.id);
-        const studentCommRes = await fetch('http://localhost:8080/api/students-communications', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                student_id: item,
-                communication_id: data.id,
-                meeting_datetime: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
-              }),
-            });
-            if (!studentCommRes.ok) throw new Error('Error al guardar la comunicación del estudiante');
-            const datastudent = await studentCommRes.json();
-        console.log("ID de la comunicación del estudiante:", datastudent.communication_id, datastudent);
-            res.push(datastudent.communication_id);
-      } catch (error) {
-        console.error('Error al guardar el mensaje:', error);
-        alert(`❌ Error al guardar el mensaje: ${error.message}`);
-      }
-    }
-    console.log("Borrame:generateEmailContent ln 7 ", res);
-    if(selectedIdsStudents.length > 0) {
-      formData.set('selectedEmails', JSON.stringify(selectedEmailsStudents));
-      formData.set('selectedIds', JSON.stringify(selectedIdsStudents));
-      formData.set('comunitacionsIds', JSON.stringify(res));
-      formData.set('sendTo', JSON.stringify('estudiante'));
-      await sendEmailInBackground(formData);
-    }
-  }
-  return res;
-};
-
-  // Handler para enviar el email o imprimir según el tipo
-  const handleSend = async () => {
-    console.log('handleSend llamado con:', {
-      messageType,
-      selectedEmails: selectedEmails.length,
-      subject,
-      messageBody
-    });
-
-    if (!validateForm()) {
-      console.log('Validación falló, deteniendo envío');
-      return;
-    }
-
-    // Si es tipo aviso, imprimir en lugar de enviar
-    if (messageType === 'aviso') {
-      handlePrint();
-      // Mostrar mensaje de éxito para aviso y redirigir
-      setTimeout(() => {
-        alert('✅ Documento de aviso generado correctamente');
-        navigate('/secretary');
-      }, 500);
-      return;
-    }
-
-    // Para citación y mensaje, enviar por email
+  const handleSendMessage = async () => {
+    if (!validateForm()) return;
     setIsSending(true);
 
     try {
-      const formData = await prepareFormData();
+      // Determinar el tipo de destinatarios
+      const hasStudents = recipientType.toLowerCase().includes('estudiantes');
+      const hasTutors = recipientType.toLowerCase().includes('tutores');
+      const hasTeachers = recipientType.toLowerCase().includes('profesores');
 
-      console.log('Iniciando envío de mensaje:', {
-        recipientType,
-        selectedEmails,
-        selectedIds,
-        messageType,
+      const payload = {
+        category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
+        secretary_id: remitentType === 'secretary' ? 1 : null,
+        teacher_id: remitentType === 'teacher' && user ? user.id : null,
         subject,
-        messageBody,
-        confirmAttendance,
-        selectedFile: selectedFile ? selectedFile.name : null,
-        selectedDate,
-        selectedTime,
-        attachmentUrl,
+        body: messageBody,
+        status: 'Enviado',
+        priority: priority || 1,
+        attachment: selectedFile ? selectedFile.name : null,
+        meeting_datetime: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
+        attendance_status: messageType === 'citacion' ? (confirmAttendance ? 'Pendiente' : null) : null,
+      };
+
+      // 1. Crear la comunicación
+      const createResponse = await fetch(`http://localhost:8080/api/communication`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
-      for (let pair of formData.entries()) {
-        console.log(`${pair[0]}: ${pair[1]}`);
+
+      if (!createResponse.ok) throw new Error('Error al crear el mensaje');
+      
+      const savedMessage = await createResponse.json();
+      const communicationId = savedMessage.id;
+      console.log('Mensaje creado:', savedMessage);
+
+      // 2. Asociar destinatarios según el tipo
+      if (hasStudents && selectedIds && selectedIds.length > 0 && communicationId) {
+        for (const studentId of selectedIds) {
+          console.log('Enviando comunicación del estudiante:', { studentId, communicationId });
+          const studentCommRes = await fetch('http://localhost:8080/api/students-communications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              student_id: studentId,
+              communication_id: communicationId,
+            }),
+          });
+          if (!studentCommRes.ok) throw new Error('Error al enviar la comunicación del estudiante');
+        }
       }
-      if(messageType === 'citacion' || (messageType === 'mensaje' && remitentType === 'teacher')) {
-        await saveCitation(formData);
-      }else{
+
+      if (hasTutors && selectedIds && selectedIds.length > 0 && communicationId) {
+        for (const tutorId of selectedIds) {
+          console.log('Enviando comunicación del tutor:', { tutorId, communicationId });
+          const tutorCommRes = await fetch('http://localhost:8080/api/tutors-communications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tutor_id: tutorId,
+              communication_id: communicationId,
+            }),
+          });
+          if (!tutorCommRes.ok) throw new Error('Error al enviar la comunicación del tutor');
+        }
+      }
+
+      if (hasTeachers && selectedIds && selectedIds.length > 0 && communicationId) {
+        for (const teacherId of selectedIds) {
+          console.log('Enviando comunicación del profesor:', { teacherId, communicationId });
+          const teacherCommRes = await fetch('http://localhost:8080/api/teachers-communications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              teacher_id: teacherId,
+              communication_id: communicationId,
+            }),
+          });
+          if (!teacherCommRes.ok) throw new Error('Error al enviar la comunicación del profesor');
+        }
+      }
+
+      // 3. Enviar emails en segundo plano (si no es aviso)
+      if (messageType !== 'aviso' && selectedEmails && selectedEmails.length > 0) {
+        console.log('🔄 Preparando envío de emails...', {
+          messageType,
+          selectedEmails: selectedEmails.length,
+          recipientType
+        });
+        const formData = new FormData();
+        formData.append('messageType', messageType);
+        formData.append('subject', subject);
+        formData.append('messageBody', messageBody);
+        formData.append('selectedDate', selectedDate);
+        formData.append('selectedTime', selectedTime);
+        formData.append('confirmAttendance', confirmAttendance);
+        formData.append('sendTo', JSON.stringify(recipientType));
+        formData.append('selectedEmails', JSON.stringify(selectedEmails));
+
+        if (selectedFile) {
+          formData.append('attachment', selectedFile);
+        }
+        console.log('📧 Llamando a sendEmailInBackground...');
         await sendEmailInBackground(formData);
+        console.log('✅ sendEmailInBackground completado');
       }
-      // Enviar emails
 
+      // 4. Si es aviso, imprimir en lugar de enviar emails
+      if (messageType === 'aviso') {
+        handlePrint();
+      }
 
-      // Mostrar mensaje de éxito único y redirigir
-      alert(`✅ Correos enviados exitosamente!\n\nDestinatarios: ${selectedEmails.length}\nTipo: ${messageType}`);
-
-      // Limpiar el formulario
-      setMessageType('');
-      setSubject('');
-      setMessageBody('');
-      setConfirmAttendance(false);
-      setSelectedFile(null);
-      setSelectedDate('');
-      setSelectedTime('');
-
-      // Redirigir a /secretary después de un breve delay
-      setTimeout(() => {
-        navigate('/secretary');
-      }, 1000);
+      alert('✅ Mensaje enviado exitosamente');
+      navigate("/secretary");
 
     } catch (error) {
-      console.error('Error al enviar:', error);
-      alert(`❌ Error al enviar correos: ${error.message}`);
+      console.error('Error al enviar el mensaje:', error);
+      alert(`❌ Error al enviar el mensaje: ${error.message}`);
     } finally {
       setIsSending(false);
     }
@@ -1000,7 +895,7 @@ const saveCitation = async (formData) => {
           <Grid item>
             <Button
               variant="contained"
-              onClick={handleSend}
+              onClick={handleSendMessage}
               disabled={isSending}
               sx={{
                 backgroundColor: messageType === 'aviso' ? '#FF6B35' : '#2C965A',
