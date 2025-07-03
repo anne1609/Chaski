@@ -323,113 +323,251 @@ function Message() {
     setIsSending(true);
 
     try {
-      // Determinar el tipo de destinatarios
-      const hasStudents = recipientType.toLowerCase().includes('estudiantes');
-      const hasTutors = recipientType.toLowerCase().includes('tutores');
-      const hasTeachers = recipientType.toLowerCase().includes('profesores');
-
-      const payload = {
-        category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
-        secretary_id: remitentType === 'secretary' ? 1 : null,
-        teacher_id: remitentType === 'teacher' && user ? user.id : null,
-        subject,
-        body: messageBody,
-        status: 'Enviado',
-        priority: priority || 1,
-        attachment: selectedFile ? selectedFile.name : null,
-        meeting_datetime: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
-        attendance_status: messageType === 'citacion' ? (confirmAttendance ? 'Pendiente' : null) : null,
-      };
-
-      // 1. Crear la comunicación
-      const createResponse = await fetch(`http://localhost:8080/api/communication`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!createResponse.ok) throw new Error('Error al crear el mensaje');
-      
-      const savedMessage = await createResponse.json();
-      const communicationId = savedMessage.id;
-      console.log('Mensaje creado:', savedMessage);
-
-      // 2. Asociar destinatarios según el tipo
-      if (hasStudents && selectedIds && selectedIds.length > 0 && communicationId) {
-        for (const studentId of selectedIds) {
-          console.log('Enviando comunicación del estudiante:', { studentId, communicationId });
-          const studentCommRes = await fetch('http://localhost:8080/api/students-communications', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              student_id: studentId,
-              communication_id: communicationId,
-            }),
-          });
-          if (!studentCommRes.ok) throw new Error('Error al enviar la comunicación del estudiante');
-        }
-      }
-
-      if (hasTutors && selectedIds && selectedIds.length > 0 && communicationId) {
-        for (const tutorId of selectedIds) {
-          console.log('Enviando comunicación del tutor:', { tutorId, communicationId });
-          const tutorCommRes = await fetch('http://localhost:8080/api/tutors-communications', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              tutor_id: tutorId,
-              communication_id: communicationId,
-            }),
-          });
-          if (!tutorCommRes.ok) throw new Error('Error al enviar la comunicación del tutor');
-        }
-      }
-
-      if (hasTeachers && selectedIds && selectedIds.length > 0 && communicationId) {
-        for (const teacherId of selectedIds) {
-          console.log('Enviando comunicación del profesor:', { teacherId, communicationId });
-          const teacherCommRes = await fetch('http://localhost:8080/api/teachers-communications', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              teacher_id: teacherId,
-              communication_id: communicationId,
-            }),
-          });
-          if (!teacherCommRes.ok) throw new Error('Error al enviar la comunicación del profesor');
-        }
-      }
-
-      // 3. Enviar emails en segundo plano (si no es aviso)
-      if (messageType !== 'aviso' && selectedEmails && selectedEmails.length > 0) {
-        console.log('🔄 Preparando envío de emails...', {
-          messageType,
-          selectedEmails: selectedEmails.length,
-          recipientType
-        });
+      if(remitentType == 'teacher') {
+        let res = [];
         const formData = new FormData();
+        // Agregar cada campo individualmente para mejor compatibilidad
+        formData.append('selectedEmails', JSON.stringify(selectedEmails));
+        formData.append('selectedIds', JSON.stringify(selectedIds));
         formData.append('messageType', messageType);
         formData.append('subject', subject);
         formData.append('messageBody', messageBody);
         formData.append('selectedDate', selectedDate);
         formData.append('selectedTime', selectedTime);
         formData.append('confirmAttendance', confirmAttendance);
-        formData.append('sendTo', JSON.stringify(recipientType));
-        formData.append('selectedEmails', JSON.stringify(selectedEmails));
-
+        
+        // Agregar attachment si existe
         if (selectedFile) {
           formData.append('attachment', selectedFile);
+          try {
+            const response = await fetch('http://localhost:8080/api/upload', {
+              method: 'POST',
+              body: formData,
+            });
+            if (response.ok) {
+              const data = await response.json();
+              formData.append('attachmentUrl', data.url);
+              setAttachmentUrl(data.url);
+              console.log('attachment subido:', data.url);
+            } else {
+              throw new Error('Error al subir el archivo');
+            }
+          } catch (error) {
+            console.error('Error al subir el attachment:', error);
+          }
         }
-        console.log('📧 Llamando a sendEmailInBackground...');
-        await sendEmailInBackground(formData);
-        console.log('✅ sendEmailInBackground completado');
-      }
+        for (const item of selectedIdsTutors) {
+          const payload = {
+            category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
+            secretary_id: null,
+            teacher_id: remitentType === 'teacher' && user ? user.id : null,
+            subject,
+            body: messageBody,
+            status: 'Enviado',
+            priority: priority || 1,
+            meeting_datetime: null,
+            attendance_status: null,
+            attachment: formData.get('attachmentUrl') ?? null,
+          };
+          console.log("Borrame saveCitation: ln 333: ", payload);
 
+          try {
+            const response = await fetch('http://localhost:8080/api/communication', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) throw new Error('Error al guardar el mensaje');
+            const data = await response.json(); // 👈 Aquí extraes el contenido JSON
+            console.log("ID de la comunicación:", data.id);
+            //res.push(data.id); // 👈 Aquí guardas el ID de la comunicación
+            const tutorCommRes = await fetch('http://localhost:8080/api/tutors-communications', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    tutor_id: item,
+                    communication_id: data.id,
+                    meeting_datetime: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
+                  }),
+                });
+                if (!tutorCommRes.ok) throw new Error('Error al guardar la comunicación del estudiante');
+                const datatutor = await tutorCommRes.json();
+            console.log("ID de la comunicación del tutor:", datatutor.communication_id, datatutor);
+                res.push(datatutor.communication_id);
+          } catch (error) {
+            console.error('Error al guardar el mensaje:', error);
+            alert(`❌ Error al guardar el mensaje: ${error.message}`);
+          }
+        }
+        console.log("Borrame:generateEmailContent ln 7 ", res);
+        if(selectedIdsTutors.length > 0) {
+          formData.set('selectedEmails', JSON.stringify(selectedEmailsTutors));
+          formData.set('selectedIds', JSON.stringify(selectedIdsTutors));
+          formData.set('comunitacionsIds', JSON.stringify(res));
+          formData.set('sendTo', JSON.stringify('tutor'));
+          await sendEmailInBackground(formData);
+        }
+        res = [];
+        for (const item of selectedIdsStudents) {
+          const payload = {
+            category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
+            secretary_id: null,
+            teacher_id: remitentType === 'teacher' && user ? user.id : null,
+            subject,
+            body: messageBody,
+            status: 'Enviado',
+            priority: priority || 1,
+            meeting_datetime: null,
+            attendance_status: null,
+            attachment: formData.get('attachmentUrl') ?? null,
+          };
+          console.log("Borrame saveCitation: ln 333: ", payload);
+
+          try {
+            const response = await fetch('http://localhost:8080/api/communication', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) throw new Error('Error al guardar el mensaje');
+            const data = await response.json(); // 👈 Aquí extraes el contenido JSON
+            console.log("ID de la comunicación:", data.id);
+            //res.push(data.id); // 👈 Aquí guardas el ID de la comunicación
+            const studentCommRes = await fetch('http://localhost:8080/api/students-communications', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    student_id: item,
+                    communication_id: data.id,
+                    meeting_datetime: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
+                  }),
+                });
+                if (!studentCommRes.ok) throw new Error('Error al guardar la comunicación del estudiante');
+                const datastudent = await studentCommRes.json();
+            console.log("ID de la comunicación del tutor:", datastudent.communication_id, datastudent);
+                res.push(datastudent.communication_id);
+          } catch (error) {
+            console.error('Error al guardar el mensaje:', error);
+            alert(`❌ Error al guardar el mensaje: ${error.message}`);
+          }
+        }
+        console.log("Borrame:generateEmailContent ln 7 ", res);
+        if(selectedIdsStudents.length > 0) {
+          formData.set('selectedEmails', JSON.stringify(selectedEmailsStudents));
+          formData.set('selectedIds', JSON.stringify(selectedIdsStudents));
+          formData.set('comunitacionsIds', JSON.stringify(res));
+          formData.set('sendTo', JSON.stringify('estudiante'));
+          await sendEmailInBackground(formData);
+        }
+      }else{
+        // Determinar el tipo de destinatarios
+        const hasStudents = recipientType.toLowerCase().includes('estudiantes');
+        const hasTutors = recipientType.toLowerCase().includes('tutores');
+        const hasTeachers = recipientType.toLowerCase().includes('profesores');
+
+        const payload = {
+          category_id: messageType === 'citacion' ? 1 : messageType === 'aviso' ? 2 : 3,
+          secretary_id: remitentType === 'secretary' ? 1 : null,
+          teacher_id: remitentType === 'teacher' && user ? user.id : null,
+          subject,
+          body: messageBody,
+          status: 'Enviado',
+          priority: priority || 1,
+          attachment: selectedFile ? selectedFile.name : null,
+          meeting_datetime: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
+          attendance_status: messageType === 'citacion' ? (confirmAttendance ? 'Pendiente' : null) : null,
+        };
+
+        // 1. Crear la comunicación
+        const createResponse = await fetch(`http://localhost:8080/api/communication`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!createResponse.ok) throw new Error('Error al crear el mensaje');
+        
+        const savedMessage = await createResponse.json();
+        const communicationId = savedMessage.id;
+        console.log('Mensaje creado:', savedMessage);
+
+        // 2. Asociar destinatarios según el tipo
+        if (hasStudents && selectedIds && selectedIds.length > 0 && communicationId) {
+          for (const studentId of selectedIds) {
+            console.log('Enviando comunicación del estudiante:', { studentId, communicationId });
+            const studentCommRes = await fetch('http://localhost:8080/api/students-communications', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                student_id: studentId,
+                communication_id: communicationId,
+              }),
+            });
+            if (!studentCommRes.ok) throw new Error('Error al enviar la comunicación del estudiante');
+          }
+        }
+
+        if (hasTutors && selectedIds && selectedIds.length > 0 && communicationId) {
+          for (const tutorId of selectedIds) {
+            console.log('Enviando comunicación del tutor:', { tutorId, communicationId });
+            const tutorCommRes = await fetch('http://localhost:8080/api/tutors-communications', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                tutor_id: tutorId,
+                communication_id: communicationId,
+              }),
+            });
+            if (!tutorCommRes.ok) throw new Error('Error al enviar la comunicación del tutor');
+          }
+        }
+
+        if (hasTeachers && selectedIds && selectedIds.length > 0 && communicationId) {
+          for (const teacherId of selectedIds) {
+            console.log('Enviando comunicación del profesor:', { teacherId, communicationId });
+            const teacherCommRes = await fetch('http://localhost:8080/api/teachers-communications', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                teacher_id: teacherId,
+                communication_id: communicationId,
+              }),
+            });
+            if (!teacherCommRes.ok) throw new Error('Error al enviar la comunicación del profesor');
+          }
+        }
+
+        // 3. Enviar emails en segundo plano (si no es aviso)
+        if (messageType !== 'aviso' && selectedEmails && selectedEmails.length > 0) {
+          console.log('🔄 Preparando envío de emails...', {
+            messageType,
+            selectedEmails: selectedEmails.length,
+            recipientType
+          });
+          const formData = new FormData();
+          formData.append('messageType', messageType);
+          formData.append('subject', subject);
+          formData.append('messageBody', messageBody);
+          formData.append('selectedDate', selectedDate);
+          formData.append('selectedTime', selectedTime);
+          formData.append('confirmAttendance', confirmAttendance);
+          formData.append('sendTo', JSON.stringify(recipientType));
+          formData.append('selectedEmails', JSON.stringify(selectedEmails));
+
+          if (selectedFile) {
+            formData.append('attachment', selectedFile);
+          }
+          console.log('📧 Llamando a sendEmailInBackground...');
+          await sendEmailInBackground(formData);
+          console.log('✅ sendEmailInBackground completado');
+        }
+      }
       // 4. Si es aviso, imprimir en lugar de enviar emails
       if (messageType === 'aviso') {
         handlePrint();
       }
-
       alert('✅ Mensaje enviado exitosamente');
       navigate("/secretary");
 
