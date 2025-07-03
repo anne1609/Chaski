@@ -342,6 +342,7 @@ function Message() {
       };
 
       // 1. Crear la comunicación
+      console.log('Payload que se enviará:', payload);
       const createResponse = await fetch(`http://localhost:8080/api/communication`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -355,8 +356,8 @@ function Message() {
       console.log('Mensaje creado:', savedMessage);
 
       // 2. Asociar destinatarios según el tipo
-      if (hasStudents && selectedIds && selectedIds.length > 0 && communicationId) {
-        for (const studentId of selectedIds) {
+      if (hasStudents && selectedIdsStudents && selectedIdsStudents.length > 0 && communicationId) {
+        for (const studentId of selectedIdsStudents) {
           console.log('Enviando comunicación del estudiante:', { studentId, communicationId });
           const studentCommRes = await fetch('http://localhost:8080/api/students-communications', {
             method: 'POST',
@@ -370,8 +371,8 @@ function Message() {
         }
       }
 
-      if (hasTutors && selectedIds && selectedIds.length > 0 && communicationId) {
-        for (const tutorId of selectedIds) {
+      if (hasTutors && selectedIdsTutors && selectedIdsTutors.length > 0 && communicationId) {
+        for (const tutorId of selectedIdsTutors) {
           console.log('Enviando comunicación del tutor:', { tutorId, communicationId });
           const tutorCommRes = await fetch('http://localhost:8080/api/tutors-communications', {
             method: 'POST',
@@ -384,9 +385,14 @@ function Message() {
           if (!tutorCommRes.ok) throw new Error('Error al enviar la comunicación del tutor');
         }
       }
+      let teacherIdsToUse = selectedIds;
+      if (hasTeachers && (!selectedIds || selectedIds.length === 0) && user && user.id) {
+      teacherIdsToUse = [user.id];
+      }
 
-      if (hasTeachers && selectedIds && selectedIds.length > 0 && communicationId) {
-        for (const teacherId of selectedIds) {
+
+      if (hasTeachers && teacherIdsToUse && teacherIdsToUse.length > 0 && communicationId) {
+        for (const teacherId of teacherIdsToUse) {
           console.log('Enviando comunicación del profesor:', { teacherId, communicationId });
           const teacherCommRes = await fetch('http://localhost:8080/api/teachers-communications', {
             method: 'POST',
@@ -469,8 +475,8 @@ function Message() {
       const savedMessage = await response.json();
       const communicationId = savedMessage.id;
       console.log('Mensaje guardado:', savedMessage);
-      if (hasStudents && selectedIds && selectedIds.length > 0 && communicationId) {
-        for (const studentId of selectedIds) {
+      if (hasStudents && selectedIdsStudents && selectedIdsStudents.length > 0 && communicationId) {
+        for (const studentId of selectedIdsStudents) {
           console.log('Guardando comunicación del estudiante:', { studentId, communicationId });
           const studentCommRes = await fetch('http://localhost:8080/api/students-communications', {
             method: 'POST',
@@ -483,8 +489,8 @@ function Message() {
           if (!studentCommRes.ok) throw new Error('Error al guardar la comunicación del estudiante');
         }
       }
-      if (hasTutors && selectedIds && selectedIds.length > 0 && communicationId) {
-        for (const tutorId of selectedIds) {
+      if (hasTutors && selectedIdsTutors && selectedIdsTutors.length > 0 && communicationId) {
+        for (const tutorId of selectedIdsTutors) {
           console.log('Guardando comunicación del tutor:', { tutorId, communicationId });
           const tutorCommRes = await fetch('http://localhost:8080/api/tutors-communications', {
           method: 'POST',
