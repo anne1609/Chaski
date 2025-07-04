@@ -1,6 +1,6 @@
 const transporter = require("../config/nodemailerConfig");
 const emailQueue = require("../utils/emailQueue");
-
+const { Communications, Students_Communications, Tutors_Communications, Students, Tutors } = require('../models'); // Ajusta el path si es necesario
 // Función para generar el contenido HTML basado en el tipo de mensaje
 const generateEmailContent = (messageType, data) => {
   const { subject, messageBody, selectedDate, selectedTime, confirmAttendance, comunitacionId, sendTo } = data;
@@ -191,6 +191,8 @@ const sendEmailQueue = async (req, res) => {
       confirmAttendance = req.body.confirmAttendance === 'true';
       comunitacionsIds = JSON.parse(req.body.comunitacionsIds || '[]');
       sendTo = req.body.sendTo || 'indefinido';
+      category_id = req.body.category_id || 1; // <--- AGREGA ESTA LÍNEA
+      priority = req.body.priority || 1;
     } else {
       // Si los datos vienen como JSON en el body (compatibilidad hacia atrás)
       ({
@@ -201,7 +203,9 @@ const sendEmailQueue = async (req, res) => {
         selectedDate = '',
         selectedTime = '',
         confirmAttendance = false,
-        comunitacionsIds = []
+        comunitacionsIds = [],
+        category_id = 1, // <--- agrega esto
+        priority = 1 
       } = req.body);
     }
     console.log("Borrame: sendEmailQueue: LN: 176 ", comunitacionsIds);
@@ -237,6 +241,41 @@ const sendEmailQueue = async (req, res) => {
         contentType: req.file.mimetype
       });
     }
+    const newCommunication = await Communications.create({
+      subject,
+      body: messageBody,
+      type: messageType,
+      meeting_datetime: messageType === 'citacion' ? `${selectedDate}T${selectedTime}` : null,
+      category_id, // <-- agrega esto
+    status: 'Enviado', // <-- agrega esto (o el valor que corresponda)
+    priority, // <-- agrega esto
+      // ...otros campos necesarios
+    });
+    const communication_id = newCommunication.id;
+
+    // 2. Asociar a todos los destinatarios
+    for (const email of selectedEmails) {
+      // Busca si es estudiante o tutor
+      const student = await Students.findOne({ where: { email } });
+      const tutor = await Tutors.findOne({ where: { email } });
+
+      if (student) {
+        await Students_Communications.create({
+          student_id: student.id,
+          communication_id,
+          meeting_datetime: newCommunication.meeting_datetime,
+          confirmed: null // o el valor por defecto
+        });
+      } else if (tutor) {
+        await Tutors_Communications.create({
+          tutor_id: tutor.id,
+          communication_id,
+          meeting_datetime: newCommunication.meeting_datetime,
+          confirmed: null
+        });
+      }
+    }
+
 
     // Preparar datos para la cola
     const emailData = {
@@ -248,7 +287,7 @@ const sendEmailQueue = async (req, res) => {
       selectedTime,
       confirmAttendance,
       attachments,
-      comunitacionsIds,
+      comunitacionsIds: [communication_id],
       sendTo
     };
 
