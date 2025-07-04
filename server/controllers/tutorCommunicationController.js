@@ -60,7 +60,7 @@ module.exports = {
     async getTutorCommunicationByIdCommunication(req, res) {
         const {communication_id} = req.params;
         try {
-            const tutorCommunication = await Tutors_Communications.findOne({
+            const tutorCommunications = await Tutors_Communications.findAll({
                 where: {
                     communication_id,
                 },
@@ -72,10 +72,14 @@ module.exports = {
                     },
                 ],
             });
-            if (!tutorCommunication) {
-                return res.status(404).json({ message: 'No se encontró la comunicación del tutor' });
-            }
-            return res.status(200).json(tutorCommunication);
+         
+            const result = tutorCommunications.map(tc => ({
+            tutor: tc.tutors,
+            attendance_status: tc.confirmed || 'pendiente',
+            tutor_id: tc.tutor_id
+        }));
+
+        return res.status(200).json(result);
         } catch (error) {
             console.error('Error al obtener la comunicación del tutor:', error);
             return res.status(500).json({ message: 'Error interno del servidor' });

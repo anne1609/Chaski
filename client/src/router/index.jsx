@@ -14,6 +14,7 @@ import TeacherAttendanceStatus from '../components/teacher/TeacherAttendanceStat
 import EditMessage from '../components/shared/EditMessage';
 import TeacherCommunications from '../components/teacher/TeacherCommunications';
 import DetailsPage from '../components/shared/DetailsPage';
+import AttendancePage from '../components/shared/AttendancePage';
 function AppRoutes() {
   return (
     <Routes>
@@ -43,6 +44,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      
       <Route 
         path="/confirmation-accepted" 
         element={
@@ -119,7 +121,10 @@ function AppRoutes() {
           </ProtectedRoute>
         } 
       />
+       <Route path="/attendance/:communicationId" element={<AttendancePage />} />
     </Routes>
+
+   
   );
 }
 

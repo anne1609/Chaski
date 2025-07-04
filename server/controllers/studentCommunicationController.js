@@ -72,15 +72,19 @@ module.exports = {
                     },
                 ],
             });
-            if (!studentCommunications) {
-                return res.status(404).json({ message: 'No se encontraron comunicaciones de estudiantes para esta comunicación' });
-            }
-            return res.status(200).json(studentCommunications);
-        } catch (error) {
-            console.error('Error al obtener las comunicaciones del estudiante por ID de comunicación:', error);
-            return res.status(500).json({ message: 'Error interno del servidor' });
-        }
-    },
+            const result = studentCommunications.map(sc => ({
+            student: sc.students,
+            attendance_status: sc.confirmed || 'pendiente',
+            student_id: sc.student_id
+            }));
+
+            console.log('Resultado:', result); 
+            return res.status(200).json(result);
+                    } catch (error) {
+                        console.error('Error al obtener las comunicaciones del estudiante por ID de comunicación:', error);
+                        return res.status(500).json({ message: 'Error interno del servidor' });
+                    }
+                },
 
     async createStudentCommunication(req, res) {
         const {student_id, communication_id,  meeting_datetime,} = req.body;

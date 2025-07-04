@@ -11,6 +11,23 @@ function CommunicationsStatus({ role }) {
   const [error, setError] = useState(null);
   const [attendanceDialog, setAttendanceDialog] = useState({ open: false, status: '' });
   const [successMessage, setSuccessMessage] = useState('');
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [selectedCommId, setSelectedCommId] = useState(null);
+  const fetchAttendance = async (communicationId) => {
+  try {
+    const [studentsRes, tutorsRes] = await Promise.all([
+      fetch(`http://localhost:8080/api/students-communications/${communicationId}`),
+      fetch(`http://localhost:8080/api/tutors-communications/${communicationId}`)
+    ]);
+    const students = studentsRes.ok ? await studentsRes.json() : [];
+    const tutors = tutorsRes.ok ? await tutorsRes.json() : [];
+    setAttendanceData([...students, ...tutors]);
+    setSelectedCommId(communicationId);
+  } catch (err) {
+    setAttendanceData([]);
+    setSelectedCommId(communicationId);
+  }
+};
   useEffect(() => {
     const fetchCommunications = async () => {
       try {
@@ -157,103 +174,138 @@ function CommunicationsStatus({ role }) {
               </TableRow>
             </TableHead>
             <TableBody
-              sx={{
-                backgroundColor: 'primary.main',
-                '& td': {
-                  color: '#ffffff',
-                  fontSize: '16px',
-                  fontWeight: 'normal',                   
-                  border: '1px solid #ccc',                                   
-                },
-              }}
+  sx={{
+    backgroundColor: 'primary.main',
+    '& td': {
+      color: '#ffffff',
+      fontSize: '16px',
+      fontWeight: 'normal',
+      border: '1px solid #ccc',
+    },
+  }}
+>
+  {communications
+    .filter((communication) => communication.status === 'Guardado' || communication.status === 'Enviado')
+    .map((communication) => (
+      <React.Fragment key={communication.id}>
+        <TableRow>
+          <TableCell>{communication.subject}</TableCell>
+          <TableCell>{communication.priority}</TableCell>
+          <TableCell>{communication.category.name}</TableCell>
+          <TableCell
+            sx={{
+              maxWidth: '250px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >{communication.body}</TableCell>
+          <TableCell>{communication.status}</TableCell>
+          <TableCell
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            {/* ...todos tus botones aquí... */}
+            {communication.status !== 'Enviado' && communication.status !== 'Archivado' && (
+              <Button
+                variant="contained"
+                color="secondary"
+                component={Link}
+                to={`/edit-message/${communication.id}`}
+                sx={{ mr: 1 }}
+              >
+                Editar
+              </Button>
+            )}
+            {communication.status !== 'Guardado' && communication.status !== 'Archivado' && (
+              <Button
+                variant="contained"
+                color="secondary"
+                component={Link}
+                onClick={() => handleStatusChange(communication.id, 'Enviado', communication)}
+                sx={{ mr: 1 }}
+              >
+                Reenviar
+              </Button>
+            )}
+            {role === 'teacher' && communication.category.name === 'citacion' ? (
+              <Button
+                variant="contained"
+                color="info"
+                component={Link}
+                to={`/attendance/${communication.id}`}
+                sx={{ mr: 1 }}
+                
+              >
+                Ver asistencia
+              </Button>
+            ) : null}
+            {role !== 'teacher' ? (
+              <Button
+                variant="contained"
+                color="info"
+                component={Link}
+                to={`/secretary/attendance/${communication.id}`}
+                sx={{ mr: 1 }}
+              >
+                Ver asistencia
+              </Button>
+            ) : null}
+            <Button
+              variant="contained"
+              color="tertiary"
+              component={Link}
+              to={`/secretary/communication/${communication.id}`}
+              sx={{ mr: 1 }}
             >
-              {communications
-              .filter((communication) => communication.status === 'Guardado' || communication.status === 'Enviado')
-              .map((communication) => (
-                <TableRow key={communication.id}>
-                  <TableCell>{communication.subject}</TableCell>
-                  <TableCell>{communication.priority}</TableCell>
-                  <TableCell>{communication.category.name}</TableCell>
-                  <TableCell
-                    sx={{
-                      maxWidth: '250px',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >{communication.body}</TableCell>
-                  <TableCell>{communication.status}</TableCell>
-                  <TableCell
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}
-                  >                      
-                    {communication.status !== 'Enviado' && communication.status !== 'Archivado' && (  
-                     <Button
-                        variant="contained"
-                        color="secondary"
-                        component={Link}
-                        to={`/edit-message/${communication.id}`}
-                        sx={{ mr: 1 }}                    
-                      >
-                        Editar
-                      </Button>
-                    )}   
-                    {communication.status !== 'Guardado' && communication.status !== 'Archivado' && (  
-                     <Button
-                        variant="contained"
-                        color="secondary"
-                        component={Link}
-                        onClick={() => handleStatusChange(communication.id, 'Enviado', communication)}
-                        sx={{ mr: 1 }}                    
-                      >
-                        Reenviar
-                      </Button>
-                    )} 
-                    {role === 'teacher' && communication.category.name === 'citacion' ? (
-                      <Button
-                        variant="contained"
-                        color="info"
-                        sx={{ mr: 1 }}
-                        onClick={() => setAttendanceDialog({ open: true, status: communication.attendance_status })}
-                      >
-                        Ver asistencia
-                      </Button>
-                    ) : null}
-                    {role !== 'teacher' ? (
-                      <Button
-                        variant="contained"
-                        color="info"
-                        component={Link}
-                        to={`/secretary/attendance/${communication.id}`}
-                        sx={{ mr: 1 }}
-                      >
-                        Ver asistencia
-                      </Button>
-                    ) : null}  
-                    <Button
-                      variant="contained"
-                      color="tertiary"
-                      component={Link}
-                      to={`/secretary/communication/${communication.id}`}
-                      sx={{ mr: 1 }}                    
-                    >
-                      Detalles
-                    </Button>                 
-                    <Button
-                      variant="contained"
-                      color="negative"
-                      onClick={() => handleStatusChange(communication.id, 'Archivado')}
-                      sx={{ mr: 1 }}
-                    >
-                      Archivar
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
+              Detalles
+            </Button>
+            <Button
+              variant="contained"
+              color="negative"
+              onClick={() => handleStatusChange(communication.id, 'Archivado')}
+              sx={{ mr: 1 }}
+            >
+              Archivar
+            </Button>
+          </TableCell>
+        </TableRow>
+        {role === 'teacher' && selectedCommId === communication.id && attendanceData.length > 0 && (
+          <TableRow>
+            <TableCell colSpan={6}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Nombre</TableCell>
+                    <TableCell>Tipo</TableCell>
+                    <TableCell>Estado</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {attendanceData.map((item, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>
+                        {item.student?.names || item.tutor?.names || 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        {item.student_id ? 'Estudiante' : 'Tutor'}
+                      </TableCell>
+                      <TableCell>
+                        {item.attendance_status || 'Pendiente'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableCell>
+          </TableRow>
+        )}
+      </React.Fragment>
+    ))}
+</TableBody>
           </Table>
         </TableContainer>
       )}
